@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portal do Professor — EduAdmin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card{box-shadow:0 4px 6px rgba(0,0,0,.08);border-radius:14px}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px}
+    .grid-hours{display:grid;grid-template-columns:100px repeat(7,1fr);gap:6px}
+    .grid-hours .col-head{font-weight:700;color:#475569}
+    .cell{height:40px;border:1px dashed #e2e8f0;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px}
+    .cell.active{background:#dcfce7;border-color:#86efac}
+    .cell.busy{background:#fee2e2;border-color:#fecaca}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50}
+    .modal-content{background:#fff;margin:4% auto;max-width:900px;width:92%;border-radius:14px;padding:18px}
+    .link{color:#2563eb;text-decoration:underline}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}
+    .table th{background:#f8fafc}
+  </style>
+</head>
+<body class="bg-gray-100 text-slate-800">
+  <!-- APP WRAPPER -->
+  <div class="max-w-7xl mx-auto p-4">
+    <!-- HEADER -->
+    <header class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded bg-indigo-600 text-white flex items-center justify-center font-bold">EP</div>
+        <div>
+          <h1 class="text-2xl font-bold">Portal do Professor</h1>
+          <p class="text-xs text-slate-500">Filho do EduAdmin (dados via localStorage)</p>
+        </div>
+      </div>
+      <div id="top-actions" class="hidden items-center gap-2">
+        <button id="btnConnectGoogle" class="px-3 py-2 rounded bg-emerald-600 text-white">Conectar Google Agenda</button>
+        <button id="btnExportICS" class="px-3 py-2 rounded bg-slate-800 text-white">Exportar .ics</button>
+        <button id="btnLogout" class="px-3 py-2 rounded bg-gray-500 text-white">Sair</button>
+      </div>
+    </header>
+
+    <!-- LOGIN -->
+    <section id="login" class="card bg-white p-6">
+      <h2 class="text-xl font-bold mb-2">Acesso do Professor</h2>
+      <p class="text-sm text-slate-500 mb-4">Use o e-mail cadastrado no EduAdmin. A senha é validada localmente por hash (<em>demo</em>).</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">E-mail</label>
+          <input id="inEmail" type="email" class="border p-2 w-full rounded" placeholder="prof@exemplo.com" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Senha</label>
+          <input id="inPass" type="password" class="border p-2 w-full rounded" placeholder="••••••••" required>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 mb-3">
+        <button id="btnLogin" class="px-4 py-2 rounded bg-indigo-600 text-white">Entrar</button>
+        <button id="btnFirstAccess" class="px-4 py-2 rounded bg-slate-200">Primeiro acesso / Definir senha</button>
+      </div>
+      <div id="loginMsg" class="text-sm text-rose-600"></div>
+    </section>
+
+    <!-- PORTAL -->
+    <section id="portal" class="hidden">
+      <!-- Professor Card -->
+      <div class="card bg-white p-5 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="text-sm text-slate-500">Conectado como</div>
+            <div id="profName" class="text-xl font-bold">—</div>
+            <div id="profEmail" class="text-sm text-slate-500">—</div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span id="profStatus" class="badge bg-emerald-100 text-emerald-700">Ativo</span>
+            <span id="profLangs" class="badge bg-indigo-100 text-indigo-700">Idiomas: —</span>
+            <span id="profCNPJ" class="badge bg-amber-100 text-amber-700">CNPJ/MEI: —</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="mb-3 flex flex-wrap gap-2">
+        <button class="tab px-3 py-2 rounded bg-indigo-600 text-white" data-target="tab-alunos">Alunos</button>
+        <button class="tab px-3 py-2 rounded bg-slate-200" data-target="tab-notas">Notas & Frequência</button>
+        <button class="tab px-3 py-2 rounded bg-slate-200" data-target="tab-agenda">Agenda</button>
+        <button class="tab px-3 py-2 rounded bg-slate-200" data-target="tab-config">Configurações</button>
+      </div>
+
+      <!-- TAB: ALUNOS -->
+      <div id="tab-alunos" class="card bg-white p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Meus Alunos</h3>
+          <div class="text-sm text-slate-500">Fonte: <code>eduadmin_alunos_v3</code></div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nome</th><th>E-mail</th><th>Idioma</th><th>Turma</th><th>Valor (R$)</th><th>Status</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tblAlunos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: NOTAS -->
+      <div id="tab-notas" class="card bg-white p-5 hidden">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Lançamentos</h3>
+          <div class="text-sm text-slate-500">Dados salvos localmente (demo)</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div>
+            <label class="block text-sm mb-1">Aluno</label>
+            <select id="lanAluno" class="border p-2 rounded w-full"></select>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Disciplina</label>
+            <input id="lanDisc" type="text" class="border p-2 rounded w-full" placeholder="Ex.: Inglês A2"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Data</label>
+            <input id="lanData" type="date" class="border p-2 rounded w-full"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Nota (0-10)</label>
+            <input id="lanNota" type="number" min="0" max="10" step="0.1" class="border p-2 rounded w-full"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Frequência (%)</label>
+            <input id="lanFreq" type="number" min="0" max="100" step="1" class="border p-2 rounded w-full"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Observações</label>
+            <input id="lanObs" type="text" class="border p-2 rounded w-full"/>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 mb-4">
+          <button id="btnSalvarLanc" class="px-4 py-2 rounded bg-indigo-600 text-white">Salvar lançamento</button>
+          <button id="btnLimparLanc" class="px-4 py-2 rounded bg-gray-200">Limpar</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr><th>Data</th><th>Aluno</th><th>Disciplina</th><th>Nota</th><th>Freq (%)</th><th>Obs</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="tblLancs"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: AGENDA -->
+      <div id="tab-agenda" class="card bg-white p-5 hidden">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Agenda e Disponibilidade</h3>
+          <div class="text-sm text-slate-500">Clique para marcar/desmarcar disponibilidade</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+          <div>
+            <label class="block text-sm mb-1">Semana base</label>
+            <input id="weekStart" type="date" class="border p-2 rounded w-full"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Início</label>
+            <input id="hourStart" type="time" value="08:00" class="border p-2 rounded w-full"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Fim</label>
+            <input id="hourEnd" type="time" value="20:00" class="border p-2 rounded w-full"/>
+          </div>
+          <div class="md:col-span-2 flex items-end gap-2">
+            <button id="btnBuildGrid" class="px-4 py-2 rounded bg-indigo-600 text-white">Gerar grade</button>
+            <button id="btnClearAvail" class="px-4 py-2 rounded bg-rose-600 text-white">Limpar semana</button>
+          </div>
+        </div>
+
+        <div id="gridWrap" class="mb-4 overflow-x-auto"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="md:col-span-2">
+            <h4 class="font-semibold mb-2">Agendar Aula</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm mb-1">Aluno</label>
+                <select id="agAluno" class="border p-2 rounded w-full"></select>
+              </div>
+              <div>
+                <label class="block text-sm mb-1">Data</label>
+                <input id="agData" type="date" class="border p-2 rounded w-full"/>
+              </div>
+              <div>
+                <label class="block text-sm mb-1">Início</label>
+                <input id="agIni" type="time" class="border p-2 rounded w-full"/>
+              </div>
+              <div>
+                <label class="block text-sm mb-1">Fim</label>
+                <input id="agFim" type="time" class="border p-2 rounded w-full"/>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 mt-3">
+              <button id="btnAgendar" class="px-4 py-2 rounded bg-emerald-600 text-white">Agendar</button>
+              <button id="btnExportLessonsICS" class="px-4 py-2 rounded bg-slate-800 text-white">Exportar aulas .ics</button>
+            </div>
+          </div>
+          <div class="md:col-span-2">
+            <h4 class="font-semibold mb-2">Aulas Agendadas</h4>
+            <div class="overflow-x-auto">
+              <table class="table">
+                <thead><tr><th>Data</th><th>Hora</th><th>Aluno</th><th>Ações</th></tr></thead>
+                <tbody id="tblAulas"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CONFIG -->
+      <div id="tab-config" class="card bg-white p-5 hidden">
+        <h3 class="text-lg font-semibold mb-3">Configurações do Professor</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-sm mb-1">Alterar senha</label>
+            <input id="cfgPass1" type="password" class="border p-2 rounded w-full" placeholder="Nova senha"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Confirmar senha</label>
+            <input id="cfgPass2" type="password" class="border p-2 rounded w-full" placeholder="Confirmar"/>
+          </div>
+          <div class="flex items-end">
+            <button id="btnChangePass" class="px-4 py-2 rounded bg-indigo-600 text-white w-full">Salvar senha</button>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 mt-3">As senhas são armazenadas como hash (SHA-256) dentro de <code>eduadmin_profs_v1</code> — apenas para fins de demonstração local.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL: PRIMEIRO ACESSO -->
+  <div id="modal-first" class="modal">
+    <div class="modal-content">
+      <h3 class="text-lg font-semibold mb-2">Primeiro acesso</h3>
+      <p class="text-sm text-slate-600 mb-3">Informe seu e-mail (já cadastrado no EduAdmin) e defina uma senha.</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">E-mail</label>
+          <input id="faEmail" type="email" class="border p-2 rounded w-full"/>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Senha</label>
+          <input id="faPass1" type="password" class="border p-2 rounded w-full"/>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Confirmar</label>
+          <input id="faPass2" type="password" class="border p-2 rounded w-full"/>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center gap-2">
+        <button id="faSalvar" class="px-4 py-2 rounded bg-indigo-600 text-white">Salvar</button>
+        <button id="faFechar" class="px-4 py-2 rounded bg-gray-200">Cancelar</button>
+      </div>
+      <div id="faMsg" class="text-sm text-rose-600 mt-2"></div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script>
+  (function(){
+    // ====== Chaves de storage (compatíveis com EduAdmin) ======
+    const PROFS_KEY   = 'eduadmin_profs_v1';
+    const ALUNOS_KEY  = 'eduadmin_alunos_v3';
+    const NOTAS_KEY   = 'edu_portal_notas_v1';
+    const FREQ_KEY    = 'edu_portal_freq_v1';
+    const AVAIL_KEY   = 'edu_portal_avail_v1';
+    const AULAS_KEY   = 'edu_portal_aulas_v1';
+    const SESSION_KEY = 'edu_portal_session_v1';
+
+    // ====== Util ======
+    const $ = (q)=>document.querySelector(q);
+    const $$= (q)=>document.querySelectorAll(q);
+    const fmtBR = (n)=>Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const todayISO = ()=>new Date().toISOString().slice(0,10);
+
+    function load(key,def){ try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(def));}catch(e){return def;} }
+    function save(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
+    function findProfByEmail(email){
+      const arr=load(PROFS_KEY,[]);
+      return arr.find(p => (p.email||'').toLowerCase()===String(email||'').toLowerCase());
+    }
+    function updateProf(prof){
+      const arr=load(PROFS_KEY,[]);
+      const idx=arr.findIndex(p=>String(p.id)===String(prof.id));
+      if(idx>-1){ arr[idx]=prof; save(PROFS_KEY,arr); }
+    }
+    async function sha256(str){
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+    function ensureWeekStart(val){
+      // default to this week's Monday
+      if(val) return val;
+      const d=new Date();
+      const day=(d.getDay()+6)%7; // Monday=0
+      d.setDate(d.getDate()-day);
+      return d.toISOString().slice(0,10);
+    }
+    function addDays(iso, n){
+      const d=new Date(iso); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10);
+    }
+
+    // ====== Estado sessão ======
+    let currentProf=null;
+
+    // ====== Login ======
+    $('#btnLogin').addEventListener('click', async ()=>{
+      const email = $('#inEmail').value.trim();
+      const pass  = $('#inPass').value;
+      $('#loginMsg').textContent='';
+      const prof = findProfByEmail(email);
+      if(!prof){ $('#loginMsg').textContent='Professor não encontrado. Verifique com o administrador.'; return; }
+      if(!prof.passHash){
+        $('#loginMsg').innerHTML='Sem senha definida. Clique em <strong>Primeiro acesso</strong> para criar.';
+        return;
+      }
+      const h = await sha256(pass);
+      if(h!==prof.passHash){ $('#loginMsg').textContent='Senha incorreta.'; return; }
+      currentProf=prof;
+      save(SESSION_KEY,{profId:prof.id});
+      enterPortal();
+    });
+
+    // Auto-login se houver sessão
+    (function(){
+      const sess = load(SESSION_KEY,null);
+      if(sess){
+        const arr = load(PROFS_KEY,[]);
+        const p = arr.find(x=>String(x.id)===String(sess.profId));
+        if(p){ currentProf=p; enterPortal(); }
+      }
+    })();
+
+    // Primeiro acesso
+    const modalFirst = $('#modal-first');
+    $('#btnFirstAccess').addEventListener('click', ()=>{ modalFirst.style.display='block'; $('#faMsg').textContent=''; $('#faEmail').value=$('#inEmail').value; });
+    $('#faFechar').addEventListener('click', ()=>{ modalFirst.style.display='none'; });
+    $('#faSalvar').addEventListener('click', async ()=>{
+      const email=$('#faEmail').value.trim();
+      const p1=$('#faPass1').value, p2=$('#faPass2').value;
+      $('#faMsg').textContent='';
+      const prof = findProfByEmail(email);
+      if(!prof){ $('#faMsg').textContent='Professor não encontrado no EduAdmin.'; return; }
+      if(!p1 || p1.length<4){ $('#faMsg').textContent='Senha muito curta.'; return; }
+      if(p1!==p2){ $('#faMsg').textContent='As senhas não coincidem.'; return; }
+      prof.passHash = await sha256(p1);
+      updateProf(prof);
+      modalFirst.style.display='none';
+      $('#inEmail').value=email;
+      $('#inPass').value='';
+      $('#loginMsg').textContent='Senha definida! Faça login.';
+    });
+
+    // ====== Entrar no Portal ======
+    function enterPortal(){
+      // Header actions
+      $('#top-actions').classList.remove('hidden');
+      $('#login').classList.add('hidden');
+      $('#portal').classList.remove('hidden');
+      // Prof card
+      $('#profName').textContent=currentProf.nome||'—';
+      $('#profEmail').textContent=currentProf.email||'—';
+      $('#profLangs').textContent='Idiomas: '+(currentProf.idiomas||'—');
+      $('#profCNPJ').textContent='CNPJ/MEI: '+(currentProf.cnpj||'—');
+      $('#profStatus').textContent=(currentProf.ativo===false?'Inativo':'Ativo');
+      $('#profStatus').className = 'badge ' + (currentProf.ativo===false ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700');
+
+      // Tabs
+      $$('.tab').forEach(b=>b.addEventListener('click', ()=>{
+        $$('.tab').forEach(x=>x.classList.remove('bg-indigo-600','text-white'));
+        b.classList.add('bg-indigo-600','text-white');
+        ['tab-alunos','tab-notas','tab-agenda','tab-config'].forEach(id=>$('#'+id).classList.add('hidden'));
+        $('#'+b.dataset.target).classList.remove('hidden');
+      }));
+
+      // Popular dados
+      renderAlunos();
+      renderLancSelects();
+      renderLancs();
+      initAgenda();
+    }
+
+    // ====== Logout ======
+    $('#btnLogout').addEventListener('click', ()=>{
+      localStorage.removeItem(SESSION_KEY);
+      currentProf=null;
+      location.reload();
+    });
+
+    // ====== ALUNOS ======
+    function myAlunos(){
+      const arr = load(ALUNOS_KEY,[]);
+      return arr.filter(a => (a.professor||'').trim()===(currentProf.nome||'').trim());
+    }
+    function renderAlunos(){
+      const tb = $('#tblAlunos'); tb.innerHTML='';
+      const alns = myAlunos();
+      alns.forEach(a=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.nome}</td>
+          <td>${a.email||'-'}</td>
+          <td>${({frances:'Francês',ingles:'Inglês',espanhol:'Espanhol',italiano:'Italiano',alema:'Alemão'})[a.idioma]||a.idioma||'-'}</td>
+          <td>${a.turma||'-'}</td>
+          <td>${fmtBR(a.valor||0)}</td>
+          <td>${a.status||'-'} ${a.quitado?'<span class="text-emerald-600 text-xs ml-1">• pago</span>':''}</td>
+          <td class="whitespace-nowrap">
+            <a href="#" data-id="${a.id}" data-act="nota" class="link">Lançar nota</a> ·
+            <a href="#" data-id="${a.id}" data-act="freq" class="link">Frequência</a>
+          </td>`;
+        tb.appendChild(tr);
+      });
+      tb.addEventListener('click', onAlunoAction);
+    }
+    function onAlunoAction(e){
+      const a=e.target.closest('a'); if(!a) return;
+      e.preventDefault();
+      const id=a.getAttribute('data-id');
+      const st=a.getAttribute('data-act');
+      const sel = $('#lanAluno');
+      sel.value=String(id);
+      if(st==='nota'){ // focar nota
+        $('#tab-notas').classList.remove('hidden'); $('#tab-alunos').classList.add('hidden');
+        // ativa tab
+        $$('.tab').forEach(x=>x.classList.remove('bg-indigo-600','text-white'));
+        $$('.tab')[1].classList.add('bg-indigo-600','text-white');
+        $('#lanNota').focus();
+      } else {
+        $('#tab-notas').classList.remove('hidden'); $('#tab-alunos').classList.add('hidden');
+        $$('.tab').forEach(x=>x.classList.remove('bg-indigo-600','text-white'));
+        $$('.tab')[1].classList.add('bg-indigo-600','text-white');
+        $('#lanFreq').focus();
+      }
+    }
+
+    // ====== NOTAS & FREQUÊNCIA ======
+    function renderLancSelects(){
+      const sel = $('#lanAluno'); sel.innerHTML='';
+      const agSel = $('#agAluno'); agSel.innerHTML='';
+      const alns = myAlunos();
+      if(!alns.length){
+        sel.innerHTML='<option value="">(Sem alunos)</option>';
+        agSel.innerHTML='<option value="">(Sem alunos)</option>';
+      } else {
+        sel.innerHTML = alns.map(a=>`<option value="${a.id}">${a.nome}</option>`).join('');
+        agSel.innerHTML = sel.innerHTML;
+      }
+      $('#lanData').value = todayISO();
+    }
+    function renderLancs(){
+      const tb = $('#tblLancs'); tb.innerHTML='';
+      const allNotas = load(NOTAS_KEY,[]);
+      const allFreq  = load(FREQ_KEY,[]);
+      const mineN = allNotas.filter(n=>String(n.profId)===String(currentProf.id));
+      const mineF = allFreq.filter(f=>String(f.profId)===String(currentProf.id));
+      // merge simples por data desc
+      const items = [];
+      mineN.forEach(n=>items.push({type:'nota',...n}));
+      mineF.forEach(f=>items.push({type:'freq',...f}));
+      items.sort((a,b)=> new Date(b.data)-new Date(a.data));
+      const alunosIdx = Object.fromEntries(myAlunos().map(a=>[String(a.id),a]));
+      items.forEach(it=>{
+        const a = alunosIdx[String(it.alunoId)];
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td>${new Date(it.data).toLocaleDateString('pt-BR')}</td>
+          <td>${a? a.nome: '(aluno removido)'}</td>
+          <td>${it.type==='nota'? (it.disciplina||'-') : '-'}</td>
+          <td>${it.type==='nota'? (it.nota??'-') : '-'}</td>
+          <td>${it.type==='freq'? (it.percent??'-') : '-'}</td>
+          <td>${it.obs||'-'}</td>
+          <td><a href="#" data-type="${it.type}" data-id="${it.id}" class="link">Excluir</a></td>
+        `;
+        tb.appendChild(tr);
+      });
+      tb.onclick = (e)=>{
+        const a=e.target.closest('a'); if(!a) return;
+        e.preventDefault();
+        const id=a.getAttribute('data-id'), type=a.getAttribute('data-type');
+        if(!confirm('Excluir lançamento?')) return;
+        if(type==='nota'){
+          const arr=load(NOTAS_KEY,[]).filter(x=>String(x.id)!==String(id));
+          save(NOTAS_KEY,arr);
+        } else {
+          const arr=load(FREQ_KEY,[]).filter(x=>String(x.id)!==String(id));
+          save(FREQ_KEY,arr);
+        }
+        renderLancs();
+      };
+    }
+    $('#btnSalvarLanc').addEventListener('click', ()=>{
+      const alunoId = $('#lanAluno').value;
+      if(!alunoId){ alert('Selecione o aluno.'); return; }
+      const data = $('#lanData').value || todayISO();
+      const nota = $('#lanNota').value;
+      const freq = $('#lanFreq').value;
+      const obs  = $('#lanObs').value.trim();
+      const disc = $('#lanDisc').value.trim();
+
+      if(nota){ // salva nota
+        const arr = load(NOTAS_KEY,[]);
+        arr.push({id:Date.now(), profId:currentProf.id, alunoId, data, nota: Number(nota), disciplina: disc, obs});
+        save(NOTAS_KEY,arr);
+      }
+      if(freq){ // salva frequência
+        const arrf = load(FREQ_KEY,[]);
+        arrf.push({id:Date.now()+1, profId:currentProf.id, alunoId, data, percent: Number(freq), obs});
+        save(FREQ_KEY,arrf);
+      }
+      $('#lanObs').value=''; $('#lanNota').value=''; $('#lanFreq').value='';
+      renderLancs();
+      alert('Lançamento salvo!');
+    });
+    $('#btnLimparLanc').addEventListener('click', ()=>{
+      $('#lanDisc').value=''; $('#lanNota').value=''; $('#lanFreq').value=''; $('#lanObs').value='';
+      $('#lanData').value=todayISO();
+    });
+
+    // ====== AGENDA / DISPONIBILIDADE ======
+    function initAgenda(){
+      $('#weekStart').value = ensureWeekStart();
+      $('#agData').value = todayISO();
+      renderLancSelects();
+      buildGrid();
+      renderAulas();
+    }
+    $('#btnBuildGrid').addEventListener('click', buildGrid);
+    $('#btnClearAvail').addEventListener('click', ()=>{
+      const wkStart = $('#weekStart').value;
+      const map = load(AVAIL_KEY,{});
+      map[currentProf.id] = (map[currentProf.id]||[]).filter(s => !(s.date>=wkStart && s.date<=addDays(wkStart,6)));
+      save(AVAIL_KEY,map);
+      buildGrid();
+    });
+
+    function buildGrid(){
+      const wrap = $('#gridWrap'); wrap.innerHTML='';
+      const wkStart = $('#weekStart').value || ensureWeekStart();
+      const hIni = $('#hourStart').value || '08:00';
+      const hFim = $('#hourEnd').value || '20:00';
+      const hours = [];
+      let h = parseInt(hIni.split(':')[0]), hf=parseInt(hFim.split(':')[0]);
+      for(let i=h;i<=hf;i++){ hours.push(String(i).padStart(2,'0')+':00'); }
+
+      const days = Array.from({length:7}, (_,i)=>addDays(wkStart,i));
+      const hdr = document.createElement('div');
+      hdr.className="grid-hours mb-2";
+      hdr.innerHTML = `<div></div>` + days.map(d=>`<div class="col-head text-center">${new Date(d).toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit', month:'2-digit'})}</div>`).join('');
+      wrap.appendChild(hdr);
+
+      const map = load(AVAIL_KEY,{});
+      const my = map[currentProf.id]||[];
+
+      hours.forEach(hr=>{
+        const row=document.createElement('div'); row.className='grid-hours mb-1';
+        row.innerHTML = `<div class="text-right pr-2 text-sm font-semibold text-slate-500">${hr}</div>`;
+        days.forEach(d=>{
+          const key = d+' '+hr;
+          const active = !!my.find(s=>s.date===d && s.start===hr);
+          const div=document.createElement('div'); div.className='cell'+(active?' active':''); div.textContent=active?'Disponível':'—';
+          div.dataset.date=d; div.dataset.start=hr;
+          div.onclick = ()=>{
+            const map = load(AVAIL_KEY,{});
+            map[currentProf.id]=map[currentProf.id]||[];
+            const idx = map[currentProf.id].findIndex(s=>s.date===d && s.start===hr);
+            if(idx>-1){ map[currentProf.id].splice(idx,1); }
+            else { map[currentProf.id].push({date:d, start:hr, end:nextHour(hr)}); }
+            save(AVAIL_KEY,map);
+            buildGrid();
+          };
+          row.appendChild(div);
+        });
+        wrap.appendChild(row);
+      });
+    }
+    function nextHour(hhmm){ const h=parseInt(hhmm.split(':')[0]); return String(h+1).padStart(2,'0')+':00'; }
+
+    // Agendar Aulas
+    $('#btnAgendar').addEventListener('click', ()=>{
+      const alunoId=$('#agAluno').value;
+      const data=$('#agData').value;
+      const ini=$('#agIni').value;
+      const fim=$('#agFim').value || nextHour(ini||'08:00');
+      if(!alunoId || !data || !ini){ alert('Preencha aluno, data e início.'); return; }
+      // opcional: validar se está marcado como disponível
+      const map = load(AVAIL_KEY,{})[currentProf.id]||[];
+      const ok = !!map.find(s=>s.date===data && s.start===ini);
+      if(!ok && !confirm('Esse horário não está marcado como disponível. Deseja agendar mesmo assim?')) return;
+
+      const aulas = load(AULAS_KEY,[]);
+      aulas.push({id:Date.now(), profId:currentProf.id, alunoId, date:data, start:ini, end:fim});
+      save(AULAS_KEY,aulas);
+      renderAulas();
+      alert('Aula agendada!');
+    });
+
+    function renderAulas(){
+      const tb=$('#tblAulas'); tb.innerHTML='';
+      const aulas = load(AULAS_KEY,[]).filter(a=>String(a.profId)===String(currentProf.id));
+      const alunosIdx = Object.fromEntries(myAlunos().map(a=>[String(a.id),a]));
+      aulas.sort((a,b)=> (a.date+b.start) < (b.date+a.start) ? -1 : 1);
+      aulas.forEach(a=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td>${new Date(a.date).toLocaleDateString('pt-BR')}</td>
+          <td>${a.start} - ${a.end}</td>
+          <td>${alunosIdx[String(a.alunoId)]?.nome||'(aluno removido)'}</td>
+          <td><a href="#" data-id="${a.id}" class="link">Excluir</a></td>
+        `;
+        tb.appendChild(tr);
+      });
+      tb.onclick=(e)=>{
+        const a=e.target.closest('a'); if(!a) return; e.preventDefault();
+        const id=a.getAttribute('data-id');
+        const arr=load(AULAS_KEY,[]).filter(x=>String(x.id)!==String(id));
+        save(AULAS_KEY,arr); renderAulas();
+      };
+    }
+
+    // ====== Exportações ICS ======
+    function icsHeader(){ return 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//EduAdmin//Professor Portal//PT-BR\r\n'; }
+    function icsFooter(){ return 'END:VCALENDAR\r\n'; }
+    function dtStamp(){ return new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z/,'Z'); }
+    function toICSDate(date, time){
+      // local naive -> treat as floating time
+      return date.replace(/-/g,'')+'T'+time.replace(/:/g,'')+'00';
+    }
+    function downloadFile(name, content){
+      const blob=new Blob([content],{type:'text/calendar;charset=utf-8;'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 500);
+    }
+    $('#btnExportICS').addEventListener('click', ()=>{
+      // exporta disponibilidade da semana visível
+      const wkStart=$('#weekStart').value || ensureWeekStart();
+      const my = (load(AVAIL_KEY,{})[currentProf.id]||[]).filter(s=>s.date>=wkStart && s.date<=addDays(wkStart,6));
+      let ics = icsHeader();
+      my.forEach((s,i)=>{
+        ics += 'BEGIN:VEVENT\r\n'
+            + `UID:AVAIL-${currentProf.id}-${i}@eduadmin\r\n`
+            + `DTSTAMP:${dtStamp()}\r\n`
+            + `DTSTART:${toICSDate(s.date, s.start)}\r\n`
+            + `DTEND:${toICSDate(s.date, s.end||nextHour(s.start))}\r\n`
+            + `SUMMARY:Disponibilidade — ${currentProf.nome}\r\n`
+            + 'END:VEVENT\r\n';
+      });
+      ics += icsFooter();
+      downloadFile('disponibilidade-'+wkStart+'.ics', ics);
+    });
+    $('#btnExportLessonsICS').addEventListener('click', ()=>{
+      const aulas = load(AULAS_KEY,[]).filter(a=>String(a.profId)===String(currentProf.id));
+      const alunosIdx = Object.fromEntries(myAlunos().map(a=>[String(a.id),a]));
+      let ics = icsHeader();
+      aulas.forEach((a,i)=>{
+        const aluno = alunosIdx[String(a.alunoId)];
+        ics += 'BEGIN:VEVENT\r\n'
+            + `UID:LESSON-${currentProf.id}-${i}@eduadmin\r\n`
+            + `DTSTAMP:${dtStamp()}\r\n`
+            + `DTSTART:${toICSDate(a.date, a.start)}\r\n`
+            + `DTEND:${toICSDate(a.date, a.end)}\r\n`
+            + `SUMMARY:Aula com ${aluno?aluno.nome:'Aluno'}\r\n`
+            + `DESCRIPTION:Professor: ${currentProf.nome}\\nAluno: ${aluno?aluno.nome:''}\r\n`
+            + 'END:VEVENT\r\n';
+      });
+      ics += icsFooter();
+      downloadFile('aulas-'+todayISO()+'.ics', ics);
+    });
+
+    // ====== Conectar Google Agenda (opcional - modo seguro) ======
+    // Observação: este botão é opcional. Sem CLIENT_ID/API_KEY válidos ele apenas informa como configurar.
+    $('#btnConnectGoogle').addEventListener('click', ()=>{
+      alert(
+        'Integração Google Agenda (client-side):\\n' +
+        '1) Crie um projeto no Google Cloud e habilite a API Calendar.\\n' +
+        '2) Obtenha um OAuth Client ID (Web) e configure o URI.\\n' +
+        '3) Implemente a chamada gapi.client.calendar.events.insert com os dados das aulas.\\n\\n' +
+        'Este portal já exporta .ics (Disponibilidade e Aulas) para importar na Agenda como alternativa 100% HTML.'
+      );
+    });
+
+    // ====== Alterar senha ======
+    $('#btnChangePass').addEventListener('click', async ()=>{
+      const p1=$('#cfgPass1').value, p2=$('#cfgPass2').value;
+      if(!p1 || p1.length<4){ alert('Senha muito curta.'); return; }
+      if(p1!==p2){ alert('Senhas não coincidem.'); return; }
+      const arr = load(PROFS_KEY,[]);
+      const idx = arr.findIndex(p=>String(p.id)===String(currentProf.id));
+      if(idx===-1){ alert('Erro ao localizar professor.'); return; }
+      arr[idx].passHash = await sha256(p1);
+      save(PROFS_KEY,arr);
+      $('#cfgPass1').value=''; $('#cfgPass2').value='';
+      alert('Senha alterada!');
+    });
+
+  })();
+  </script>
+</body>
+</html>
