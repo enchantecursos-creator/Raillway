@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Portal do Aluno - EduOnline</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-dark: #1e40af;
+      --secondary: #64748b;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --sidebar-width: 280px;
+    }
+    
+    .sidebar{
+      background:linear-gradient(135deg,#059669,#10b981);
+      height:100vh;
+      position:fixed;
+      width:var(--sidebar-width);
+      overflow-y:auto;
+      z-index:20;
+      transition: transform 0.3s ease;
+    }
+    
+    .sidebar.hidden-mobile {
+      transform: translateX(-100%);
+    }
+    
+    .main{
+      margin-left:var(--sidebar-width);
+      padding:20px;
+      min-height:100vh;
+      transition: margin-left 0.3s ease;
+    }
+    
+    .main.expanded {
+      margin-left: 0;
+    }
+    
+    @media (max-width:1024px){
+      .sidebar{
+        position:fixed;
+        transform: translateX(-100%);
+      }
+      .sidebar.show-mobile {
+        transform: translateX(0);
+      }
+      .main{
+        margin-left:0;
+      }
+    }
+    
+    .card{
+      box-shadow:0 4px 12px rgba(0,0,0,.08);
+      border-radius:16px;
+      overflow:hidden;
+      transition: all 0.2s ease;
+    }
+    
+    .card:hover {
+      box-shadow: 0 8px 25px rgba(0,0,0,.12);
+    }
+    
+    .modal{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.6);
+      z-index:100;
+      backdrop-filter: blur(2px);
+    }
+    
+    .modal-content{
+      background:#fff;
+      margin:2% auto;
+      padding:24px;
+      border-radius:16px;
+      max-width:1000px;
+      width:95%;
+      max-height:90vh;
+      overflow-y:auto;
+      animation: modalSlideIn 0.3s ease;
+    }
+    
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .video-container {
+      position: relative;
+      width: 100%;
+      height: 0;
+      padding-bottom: 56.25%;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #059669, #10b981);
+      transition: width 0.3s ease;
+      border-radius: 4px;
+    }
+    
+    .btn{
+      padding:10px 18px;
+      border-radius:12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary{
+      background:var(--primary);
+      color:#fff;
+    }
+    .btn-primary:hover{
+      background:var(--primary-dark);
+    }
+    
+    .btn-success{
+      background:var(--success);
+      color:#fff;
+    }
+    
+    .btn-warning{
+      background:var(--warning);
+      color:#fff;
+    }
+    
+    .btn-danger{
+      background:var(--danger);
+      color:#fff;
+    }
+    
+    .btn-gray{
+      background:#e5e7eb;
+      color:#374151;
+    }
+    .btn-gray:hover{
+      background:#d1d5db;
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      margin: 4px 0;
+      border-radius: 12px;
+      color: rgba(255,255,255,0.9);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .nav-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+    
+    .nav-item.active {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      font-weight: 600;
+    }
+    
+    .lesson-card {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .lesson-card:hover {
+      transform: translateY(-2px);
+    }
+    
+    .lesson-thumbnail {
+      width: 100%;
+      height: 120px;
+      background: #f3f4f6;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .play-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px;
+      height: 48px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+    }
+    
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+    
+    .notification.show {
+      transform: translateX(0);
+    }
+    
+    .pill {
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+    
+    .pill-success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    
+    .pill-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    
+    .pill-danger {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    
+    .pill-primary {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--success);
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+    
+    .stars-rating {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .star {
+      font-size: 18px;
+      color: #d1d5db;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .star.active {
+      color: #fbbf24;
+    }
+    
+    /* Novos estilos para o perfil */
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #059669, #10b981);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 3rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .profile-avatar:hover {
+      transform: scale(1.05);
+    }
+    
+    .plan-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .plan-card:hover {
+      border-color: #10b981;
+      transform: translateY(-2px);
+    }
+    
+    .plan-card.current {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    
+    .plan-card.current::before {
+      content: 'Plano Atual';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #10b981;
+      color: white;
+      padding: 4px 16px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .availability-slot {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 4px 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .availability-slot:hover {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    
+    .availability-slot.selected {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    
+    .availability-slot.unavailable {
+      background: #fef2f2;
+      border-color: #fecaca;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    
+    .sync-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .sync-status.connected {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .sync-status.disconnected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .sync-status.syncing {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .calendar-day {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 80px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .calendar-day:hover {
+      background: #f9fafb;
+    }
+    
+    .calendar-day.today {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    
+    .calendar-event {
+      background: #3b82f6;
+      color: white;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin: 1px 0;
+      cursor: pointer;
+    }
+    
+    .calendar-event.professor {
+      background: #1d4ed8;
+    }
+    
+    .calendar-event.aluno {
+      background: #10b981;
+    }
+    
+    @media (max-width: 640px) {
+      .main {
+        padding: 12px;
+      }
+      
+      .video-container {
+        padding-bottom: 65%;
+      }
+      
+      .profile-avatar {
+        width: 100px;
+        height: 100px;
+        font-size: 2.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <!-- Mobile Menu Button -->
+  <button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-30 bg-green-600 text-white p-3 rounded-full shadow-lg">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+    </svg>
+  </button>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="p-6 text-white">
+      <!-- Header -->
+      <div class="flex items-center gap-4 mb-8">
+        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">
+          🎓
+        </div>
+        <div>
+          <h2 class="text-xl font-bold">Portal do Aluno</h2>
+          <div id="aluno-mini" class="text-sm opacity-80">—</div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="space-y-2">
+        <div class="nav-item active" data-target="dashboard">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+          </svg>
+          Dashboard
+        </div>
+        <div class="nav-item" data-target="aulas">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path>
+          </svg>
+          Aulas & Vídeos
+        </div>
+        <div class="nav-item" data-target="materiais">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"></path>
+          </svg>
+          Materiais
+        </div>
+        <div class="nav-item" data-target="agenda">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+          </svg>
+          Agenda & Horários
+        </div>
+        <div class="nav-item" data-target="financeiro">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+          </svg>
+          Financeiro
+        </div>
+        <div class="nav-item" data-target="notas">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Notas & Avaliações
+        </div>
+        <div class="nav-item" data-target="tarefas">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+          </svg>
+          Tarefas
+        </div>
+        <div class="nav-item" data-target="progresso">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+          </svg>
+          Meu Progresso
+        </div>
+        <div class="nav-item" data-target="perfil">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+          </svg>
+          Meu Perfil
+        </div>
+        <div class="nav-item" data-target="certificados">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          Certificados
+        </div>
+      </nav>
+
+      <!-- Settings -->
+      <div class="mt-8 p-4 bg-white/10 rounded-xl">
+        <div class="flex items-center justify-between mb-4">
+          <span class="font-medium">Modo escuro</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input id="dark-toggle" type="checkbox" class="sr-only peer">
+            <div class="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-700"></div>
+          </label>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <span class="font-medium">Notificações</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input id="notif-toggle" type="checkbox" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
+
+      <button id="logout" class="mt-6 w-full bg-red-500/20 hover:bg-red-500/30 rounded-xl px-4 py-3 transition-colors">
+        <div class="flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"></path>
+          </svg>
+          Sair
+        </div>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main-content">
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="sec">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-3xl font-bold mb-2">Olá, <span id="aluno-name">Aluno(a)</span> 👋</h1>
+          <p class="text-gray-600">Continue seus estudos de onde parou</p>
+        </div>
+        <div class="flex gap-3">
+          <button id="sync-progresso" class="btn btn-success">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+            </svg>
+            Sincronizar
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="card bg-white p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-gray-500 mb-1">Aulas assistidas</div>
+              <div id="kpiAulasAssistidas" class="text-3xl font-bold text-green-600">0</div>
+              <div class="text-xs text-gray-400 mt-1">de <span id="totalAulas">0</span></div>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-white p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-gray-500 mb-1">Média geral</div>
+              <div id="kpiMediaGeral" class="text-3xl font-bold text-blue-600">0.0</div>
+              <div class="text-xs text-gray-400 mt-1">últimas avaliações</div>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-white p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-gray-500 mb-1">Faturas em aberto</div>
+              <div id="kpiFaturasAbertas" class="text-3xl font-bold text-amber-600">0</div>
+              <div class="text-xs text-gray-400 mt-1">para pagar</div>
+            </div>
+            <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-white p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-gray-500 mb-1">Progresso geral</div>
+              <div id="kpiProgressoGeral" class="text-3xl font-bold text-purple-600">0%</div>
+              <div class="text-xs text-gray-400 mt-1">do curso</div>
+            </div>
+            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Overview -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="card bg-white p-6">
+          <h3 class="text-lg font-semibold mb-4">Progresso dos Módulos</h3>
+          <div id="progressoModulos" class="space-y-4"></div>
+        </div>
+
+        <div class="card bg-white p-6">
+          <h3 class="text-lg font-semibold mb-4">Atividade Recente</h3>
+          <div id="atividadeRecente" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- Continue Watching -->
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Continue assistindo</h3>
+        <div id="continueWatching" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
+
+    <!-- AGENDA & HORÁRIOS (NOVA ABA MELHORADA) -->
+    <section id="agenda" class="sec hidden">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold mb-2">Agenda & Horários</h1>
+        <p class="text-gray-600">Sincronize sua agenda com seu professor e gerencie seus horários de estudo</p>
+      </div>
+
+      <!-- Status de Sincronização -->
+      <div class="card bg-white p-6 mb-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Status de Sincronização</h3>
+            <div class="flex items-center gap-4">
+              <div id="sync-status-professor" class="sync-status disconnected">
+                <div class="w-2 h-2 bg-current rounded-full"></div>
+                Professor: Desconectado
+              </div>
+              <div id="sync-status-google" class="sync-status disconnected">
+                <div class="w-2 h-2 bg-current rounded-full"></div>
+                Google: Desconectado
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <button id="sync-professor" class="btn btn-primary">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+              </svg>
+              Sincronizar Professor
+            </button>
+            <button id="connect-google" class="btn btn-success">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"></path>
+              </svg>
+              Conectar Google
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendário e Disponibilidades -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="card bg-white">
+          <div class="p-6 border-b">
+            <h3 class="text-lg font-semibold">Disponibilidade do Professor</h3>
+            <p class="text-sm text-gray-600 mt-1">Horários disponíveis para agendamento</p>
+          </div>
+          <div class="p-6">
+            <div id="professor-availability" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <div class="card bg-white">
+          <div class="p-6 border-b">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Minha Disponibilidade</h3>
+              <button id="add-availability" class="btn btn-success btn-sm">+ Adicionar</button>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">Informe seus horários disponíveis</p>
+          </div>
+          <div class="p-6">
+            <div id="minha-disponibilidade" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agenda Semanal -->
+      <div class="card bg-white">
+        <div class="p-6 border-b">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Agenda da Semana</h3>
+            <div class="flex items-center gap-2">
+              <button id="prev-week" class="btn btn-gray btn-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </button>
+              <span id="week-range" class="text-sm font-medium px-3">Semana atual</span>
+              <button id="next-week" class="btn btn-gray btn-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="p-6">
+          <div id="agenda-semanal" class="grid grid-cols-7 gap-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEU PERFIL (NOVA ABA) -->
+    <section id="perfil" class="sec hidden">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold mb-2">Meu Perfil</h1>
+        <p class="text-gray-600">Gerencie seus dados pessoais, planos e configurações</p>
+      </div>
+
+      <!-- Informações do Perfil -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="card bg-white p-6 text-center">
+          <div class="profile-avatar mx-auto mb-4" id="profile-avatar">
+            <span id="avatar-initials">MS</span>
+          </div>
+          <h3 id="profile-name" class="text-xl font-bold mb-2">Maria Silva</h3>
+          <p id="profile-email" class="text-gray-600 mb-4">maria@email.com</p>
+          <button id="change-avatar" class="btn btn-primary">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+            </svg>
+            Alterar Foto
+          </button>
+        </div>
+
+        <div class="lg:col-span-2 card bg-white p-6">
+          <h3 class="text-lg font-semibold mb-4">Informações Pessoais</h3>
+          <form id="form-perfil" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-group">
+              <label class="form-label">Nome Completo</label>
+              <input id="perfil-nome" type="text" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">E-mail</label>
+              <input id="perfil-email" type="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Telefone</label>
+              <input id="perfil-telefone" type="tel" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data de Nascimento</label>
+              <input id="perfil-nascimento" type="date" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">CPF</label>
+              <input id="perfil-cpf" type="text" class="form-input" maxlength="14">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Profissão</label>
+              <input id="perfil-profissao" type="text" class="form-input">
+            </div>
+            <div class="form-group md:col-span-2">
+              <button type="submit" class="btn btn-success">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Salvar Informações
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Endereço -->
+      <div class="card bg-white p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Endereço</h3>
+        <form id="form-endereco" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="form-group">
+            <label class="form-label">CEP</label>
+            <input id="endereco-cep" type="text" class="form-input" maxlength="9">
+          </div>
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Logradouro</label>
+            <input id="endereco-logradouro" type="text" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Número</label>
+            <input id="endereco-numero" type="text" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Complemento</label>
+            <input id="endereco-complemento" type="text" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bairro</label>
+            <input id="endereco-bairro" type="text" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cidade</label>
+            <input id="endereco-cidade" type="text" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estado</label>
+            <select id="endereco-estado" class="form-input">
+              <option value="">Selecione...</option>
+              <option value="AC">Acre</option>
+              <option value="AL">Alagoas</option>
+              <option value="AP">Amapá</option>
+              <option value="AM">Amazonas</option>
+              <option value="BA">Bahia</option>
+              <option value="CE">Ceará</option>
+              <option value="DF">Distrito Federal</option>
+              <option value="ES">Espírito Santo</option>
+              <option value="GO">Goiás</option>
+              <option value="MA">Maranhão</option>
+              <option value="MT">Mato Grosso</option>
+              <option value="MS">Mato Grosso do Sul</option>
+              <option value="MG">Minas Gerais</option>
+              <option value="PA">Pará</option>
+              <option value="PB">Paraíba</option>
+              <option value="PR">Paraná</option>
+              <option value="PE">Pernambuco</option>
+              <option value="PI">Piauí</option>
+              <option value="RJ">Rio de Janeiro</option>
+              <option value="RN">Rio Grande do Norte</option>
+              <option value="RS">Rio Grande do Sul</option>
+              <option value="RO">Rondônia</option>
+              <option value="RR">Roraima</option>
+              <option value="SC">Santa Catarina</option>
+              <option value="SP">São Paulo</option>
+              <option value="SE">Sergipe</option>
+              <option value="TO">Tocantins</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">País</label>
+            <input id="endereco-pais" type="text" class="form-input" value="Brasil" readonly>
+          </div>
+          <div class="form-group md:col-span-3">
+            <button type="submit" class="btn btn-success">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              Salvar Endereço
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Planos -->
+      <div class="card bg-white p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Planos Disponíveis</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="plan-card current relative" data-plan="premium">
+            <div class="text-4xl mb-4">🌟</div>
+            <h4 class="text-xl font-bold mb-2">Premium</h4>
+            <div class="text-3xl font-bold text-green-600 mb-4">R$ 350<span class="text-lg text-gray-500">/mês</span></div>
+            <ul class="text-sm text-gray-600 space-y-2 mb-6">
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Aulas ilimitadas
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Material completo
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Suporte prioritário
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Certificados
+              </li>
+            </ul>
+          </div>
+
+          <div class="plan-card" data-plan="standard">
+            <div class="text-4xl mb-4">📚</div>
+            <h4 class="text-xl font-bold mb-2">Standard</h4>
+            <div class="text-3xl font-bold text-blue-600 mb-4">R$ 250<span class="text-lg text-gray-500">/mês</span></div>
+            <ul class="text-sm text-gray-600 space-y-2 mb-6">
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                4 aulas/mês
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Material básico
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Suporte por email
+              </li>
+            </ul>
+            <button class="btn btn-primary w-full">Alterar Plano</button>
+          </div>
+
+          <div class="plan-card" data-plan="basic">
+            <div class="text-4xl mb-4">📖</div>
+            <h4 class="text-xl font-bold mb-2">Básico</h4>
+            <div class="text-3xl font-bold text-gray-600 mb-4">R$ 150<span class="text-lg text-gray-500">/mês</span></div>
+            <ul class="text-sm text-gray-600 space-y-2 mb-6">
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                2 aulas/mês
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                Acesso às aulas
+              </li>
+            </ul>
+            <button class="btn btn-primary w-full">Alterar Plano</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configurações Avançadas -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card bg-white p-6">
+          <h3 class="text-lg font-semibold mb-4">Preferências de Estudo</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="form-label">Objetivo de Estudo</label>
+              <select id="objetivo-estudo" class="form-input">
+                <option value="">Selecione...</option>
+                <option value="conversacao">Conversação</option>
+                <option value="negocios">Inglês para Negócios</option>
+                <option value="academico">Inglês Acadêmico</option>
+                <option value="viagem">Inglês para Viagem</option>
+                <option value="certificacao">Preparação para Certificação</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Nível Atual</label>
+              <select id="nivel-atual" class="form-input">
+                <option value="">Selecione...</option>
+                <option value="iniciante">Iniciante (A1)</option>
+                <option value="elementar">Elementar (A2)</option>
+                <option value="intermediario">Intermediário (B1)</option>
+                <option value="intermediario-avancado">Intermediário Avançado (B2)</option>
+                <option value="avancado">Avançado (C1)</option>
+                <option value="proficiente">Proficiente (C2)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Horário Preferido</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" class="w-4 h-4" value="manha"> Manhã (8h-12h)
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" class="w-4 h-4" value="tarde"> Tarde (12h-18h)
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" class="w-4 h-4" value="noite"> Noite (18h-22h)
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" class="w-4 h-4" value="madrugada"> Madrugada (22h-8h)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-white p-6">
+          <h3 class="text-lg font-semibold mb-4">Configurações do Sistema</h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-medium">Notificações por Email</h4>
+                <p class="text-sm text-gray-600">Receber avisos sobre aulas e vencimentos</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="notif-email" type="checkbox" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-medium">Notificações Push</h4>
+                <p class="text-sm text-gray-600">Alertas no navegador sobre atividades</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="notif-push" type="checkbox" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-medium">Lembrete de Estudos</h4>
+                <p class="text-sm text-gray-600">Lembretes diários para manter o hábito</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="lembrete-estudos" type="checkbox" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-medium">Autoplay de Vídeos</h4>
+                <p class="text-sm text-gray-600">Reproduzir próximo vídeo automaticamente</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="autoplay-videos" type="checkbox" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINANCEIRO -->
+    <section id="financeiro" class="sec hidden">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold mb-2">Financeiro</h1>
+        <p class="text-gray-600">Gerencie suas mensalidades, pagamentos e histórico financeiro</p>
+      </div>
+
+      <!-- Resumo Financeiro -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="card bg-gradient-to-r from-green-500 to-green-600 text-white p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm opacity-90 mb-1">Mensalidade atual</div>
+              <div id="finMensalidadeAtual" class="text-2xl font-bold">R$ 0,00</div>
+            </div>
+            <div class="text-3xl opacity-80">💳</div>
+          </div>
+        </div>
+
+        <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm opacity-90 mb-1">Total pago em 2024</div>
+              <div id="finTotalPago" class="text-2xl font-bold">R$ 0,00</div>
+            </div>
+            <div class="text-3xl opacity-80">💰</div>
+          </div>
+        </div>
+
+        <div class="card bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm opacity-90 mb-1">Faturas em aberto</div>
+              <div id="finFaturasAbertas" class="text-2xl font-bold">0</div>
+            </div>
+            <div class="text-3xl opacity-80">📋</div>
+          </div>
+        </div>
+
+        <div class="card bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm opacity-90 mb-1">Próximo vencimento</div>
+              <div id="finProximoVenc" class="text-xl font-bold">--/--</div>
+            </div>
+            <div class="text-3xl opacity-80">📅</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Faturas e Pagamentos -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="card bg-white">
+          <div class="p-6 border-b">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Faturas Recentes</h3>
+              <button id="btn-nova-fatura" class="btn btn-primary btn-sm">+ Nova Fatura</button>
+            </div>
+          </div>
+          <div id="listaFaturas" class="p-6 space-y-4 max-h-96 overflow-y-auto"></div>
+        </div>
+
+        <div class="card bg-white">
+          <div class="p-6 border-b">
+            <h3 class="text-lg font-semibold">Histórico de Pagamentos</h3>
+          </div>
+          <div id="listaPagamentos" class="p-6 space-y-4 max-h-96 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <!-- Gráfico de Gastos -->
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Gastos por Mês (2024)</h3>
+        <canvas id="gastosChart" class="financial-chart"></canvas>
+      </div>
+    </section>
+
+    <!-- OUTRAS SEÇÕES (mantidas iguais) -->
+    <section id="aulas" class="sec hidden">
+      <h1 class="text-3xl font-bold mb-4">Aulas & Vídeos</h1>
+      <p class="text-gray-600">Seção de aulas em desenvolvimento...</p>
+    </section>
+
+    <section id="materiais" class="sec hidden">
+      <h1 class="text-3xl font-bold mb-4">Materiais</h1>
+      <p class="text-gray-600">Seção de materiais em desenvolvimento...</p>
+    </section>
+
+    <section id="notas" class="sec hidden">
+      <h1 class="text-3xl font-bold mb-4">Notas & Avaliações</h1>
+      <p class="text-gray-600">Seção de notas em desenvolvimento...</p>
+    </section>
+
+    <section id="tarefas" class="sec hidden">
+      <h1 class="text-3xl font-bold mb-4">Tarefas</h1>
+      <p class="text-gray-600">Seção de tarefas em desenvolvimento...</p>
+    </section>
+
+    <section id="progresso" class="sec hidden">
+      <h1 class="text-3xl font-bold mb-4">Meu Progresso</h1>
+      <p class="text-gray-600">Seção de progresso em desenvolvimento...</p>
+    </section>
+
+    <section id="certificados" class="sec hidden">
+      <h1 class="text-3xl font-bold mb-4">Certificados</h1>
+      <p class="text-gray-600">Seção de certificados em desenvolvimento...</p>
+    </section>
+  </main>
+
+  <!-- MODAIS -->
+  
+  <!-- MODAL ADICIONAR DISPONIBILIDADE -->
+  <div id="modal-disponibilidade" class="modal">
+    <div class="modal-content">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold">Adicionar Disponibilidade</h3>
+        <button id="disp-close" class="btn btn-gray">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <form id="form-disponibilidade" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Dia da Semana</label>
+            <select id="disp-dia" class="form-input">
+              <option value="0">Domingo</option>
+              <option value="1">Segunda-feira</option>
+              <option value="2">Terça-feira</option>
+              <option value="3">Quarta-feira</option>
+              <option value="4">Quinta-feira</option>
+              <option value="5">Sexta-feira</option>
+              <option value="6">Sábado</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Recorrente</label>
+            <select id="disp-recorrente" class="form-input">
+              <option value="semanal">Toda semana</option>
+              <option value="quinzenal">A cada 2 semanas</option>
+              <option value="mensal">Mensal</option>
+              <option value="unica">Apenas uma vez</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Horário de Início</label>
+            <input id="disp-inicio" type="time" class="form-input" value="09:00">
+          </div>
+          <div>
+            <label class="form-label">Horário de Fim</label>
+            <input id="disp-fim" type="time" class="form-input" value="10:00">
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Observações (opcional)</label>
+          <textarea id="disp-obs" class="form-input" rows="3" placeholder="Ex: Preferência por conversação, dificuldades específicas..."></textarea>
+        </div>
+        
+        <div class="flex gap-3">
+          <button type="submit" class="btn btn-success">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+            Adicionar Disponibilidade
+          </button>
+          <button type="button" id="disp-cancel" class="btn btn-gray">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL UPLOAD FOTO -->
+  <div id="modal-avatar" class="modal">
+    <div class="modal-content">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold">Alterar Foto do Perfil</h3>
+        <button id="avatar-close" class="btn btn-gray">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="text-center">
+        <div class="profile-avatar mx-auto mb-6" id="preview-avatar">
+          <span id="preview-initials">MS</span>
+        </div>
+        
+        <input id="file-avatar" type="file" accept="image/*" class="hidden">
+        
+        <div class="flex flex-col gap-3">
+          <button id="upload-avatar" class="btn btn-primary">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+            </svg>
+            Escolher Foto
+          </button>
+          
+          <p class="text-sm text-gray-600">Ou escolha um avatar:</p>
+          
+          <div class="grid grid-cols-4 gap-3">
+            <button class="avatar-option w-16 h-16 rounded-full bg-blue-500 text-white text-xl font-bold" data-avatar="👨‍🎓">👨‍🎓</button>
+            <button class="avatar-option w-16 h-16 rounded-full bg-green-500 text-white text-xl font-bold" data-avatar="👩‍🎓">👩‍🎓</button>
+            <button class="avatar-option w-16 h-16 rounded-full bg-purple-500 text-white text-xl font-bold" data-avatar="🧑‍💻">🧑‍💻</button>
+            <button class="avatar-option w-16 h-16 rounded-full bg-pink-500 text-white text-xl font-bold" data-avatar="👤">👤</button>
+            <button class="avatar-option w-16 h-16 rounded-full bg-red-500 text-white text-xl font-bold" data-avatar="🎯">🎯</button>
+            <button class="avatar-option w-16 h-16 rounded-full bg-yellow-500 text-white text-xl font-bold" data-avatar="⭐">⭐</button>
+            <button class="avatar-option w-16 h-16 rounded-full bg-indigo-500 text-white text-xl font-bold" data-avatar="🚀">🚀</button>
+            <button class="avatar-option w-16 h-16 rounded-full bg-teal-500 text-white text-xl font-bold" data-avatar="💡">💡</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificação -->
+  <div id="notification" class="notification">
+    <div class="flex items-center gap-3">
+      <div id="notif-icon" class="w-8 h-8 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      <div>
+        <div id="notif-title" class="font-semibold"></div>
+        <div id="notif-message" class="text-sm text-gray-600"></div>
+      </div>
+      <button id="notif-close" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ========== PORTAL DO ALUNO COM PERFIL E AGENDA SINCRONIZADA ==========
+    ;(function(){
+      // ---------- CONSTANTES ----------
+      const KEYS = {
+        ALUNO: 'portal_aluno_v1',
+        PROGRESSO: 'portal_progresso_v1',
+        AULAS: 'portal_aulas_v1',
+        MATERIAIS: 'portal_materiais_v1',
+        NOTAS: 'portal_notas_v1',
+        TAREFAS: 'portal_tarefas_v1',
+        FINANCEIRO: 'portal_financeiro_v1',
+        FATURAS: 'portal_faturas_v1',
+        PAGAMENTOS: 'portal_pagamentos_v1',
+        PERFIL: 'portal_perfil_v1',
+        ENDERECO: 'portal_endereco_v1',
+        DISPONIBILIDADE: 'portal_disponibilidade_v1',
+        AGENDA_SYNC: 'portal_agenda_sync_v1',
+        PROFESSOR_AGENDA: 'profportal_agenda_v2', // Sincronização com professor
+        CONFIG: 'portal_config_v1'
+      };
+
+      // ---------- UTILITÁRIOS ----------
+      const $ = sel => document.querySelector(sel);
+      const $$ = sel => document.querySelectorAll(sel);
+      
+      const Utils = {
+        load: (key, fallback) => {
+          try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : fallback;
+          } catch {
+            return fallback;
+          }
+        },
+        
+        save: (key, data) => {
+          try {
+            localStorage.setItem(key, JSON.stringify(data));
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        
+        format: {
+          date: d => new Date(d).toLocaleDateString('pt-BR'),
+          currency: v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
+          time: d => d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}),
+          duration: mins => {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return h > 0 ? `${h}h ${m}min` : `${m}min`;
+          },
+          monthYear: d => {
+            const date = new Date(d);
+            return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+          }
+        },
+        
+        date: {
+          today: () => new Date().toISOString().slice(0, 10),
+          addDays: (date, days) => {
+            const d = new Date(date);
+            d.setDate(d.getDate() + days);
+            return d;
+          },
+          isoDate: d => d.toISOString().slice(0, 10),
+          weekdayName: i => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][i],
+          weekdayLongName: i => ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'][i]
+        },
+        
+        debounce: (func, wait) => {
+          let timeout;
+          return function executedFunction(...args) {
+            const later = () => {
+              clearTimeout(timeout);
+              func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+          };
+        },
+        
+        generateInitials: (nome) => {
+          return nome.split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .substring(0, 2)
+            .toUpperCase();
+        }
+      };
+
+      // ---------- SISTEMA DE NOTIFICAÇÕES ----------
+      const Notifications = {
+        show: (title, message, type = 'success') => {
+          const notification = $('#notification');
+          const icon = $('#notif-icon');
+          const titleEl = $('#notif-title');
+          const messageEl = $('#notif-message');
+          
+          const colors = {
+            success: 'bg-green-100 text-green-600',
+            warning: 'bg-yellow-100 text-yellow-600',
+            error: 'bg-red-100 text-red-600',
+            info: 'bg-blue-100 text-blue-600'
+          };
+          
+          icon.className = `w-8 h-8 rounded-full flex items-center justify-center ${colors[type]}`;
+          titleEl.textContent = title;
+          messageEl.textContent = message;
+          
+          notification.classList.add('show');
+          
+          setTimeout(() => {
+            notification.classList.remove('show');
+          }, 4000);
+        }
+      };
+
+      // Fechar notificação
+      $('#notif-close')?.addEventListener('click', () => {
+        $('#notification').classList.remove('show');
+      });
+
+      // ---------- DADOS INICIAIS ----------
+      let aluno = Utils.load(KEYS.ALUNO, null);
+      let perfil = Utils.load(KEYS.PERFIL, null);
+      let endereco = Utils.load(KEYS.ENDERECO, null);
+      let config = Utils.load(KEYS.CONFIG, {
+        notifications: true,
+        darkMode: false
+      });
+
+      if (!aluno) {
+        aluno = {
+          id: 1001,
+          nome: 'Maria Silva',
+          email: 'maria@email.com',
+          turma: 'Inglês Intermediário',
+          professor: 'Prof. Elise',
+          professorId: 1001,
+          matricula: '2024001',
+          plano: 'premium',
+          valorMensalidade: 350.00,
+          avatar: '👩‍🎓'
+        };
+        Utils.save(KEYS.ALUNO, aluno);
+      }
+
+      if (!perfil) {
+        perfil = {
+          nome: aluno.nome,
+          email: aluno.email,
+          telefone: '(11) 99999-9999',
+          nascimento: '1995-03-15',
+          cpf: '123.456.789-00',
+          profissao: 'Analista de Sistemas',
+          objetivoEstudo: 'negocios',
+          nivelAtual: 'intermediario',
+          horariosPreferidos: ['noite'],
+          configuracoes: {
+            notifEmail: true,
+            notifPush: true,
+            lembreteEstudos: true,
+            autoplayVideos: false
+          }
+        };
+        Utils.save(KEYS.PERFIL, perfil);
+      }
+
+      if (!endereco) {
+        endereco = {
+          cep: '01310-100',
+          logradouro: 'Av. Paulista',
+          numero: '1000',
+          complemento: 'Apto 101',
+          bairro: 'Bela Vista',
+          cidade: 'São Paulo',
+          estado: 'SP',
+          pais: 'Brasil'
+        };
+        Utils.save(KEYS.ENDERECO, endereco);
+      }
+
+      // Inicializar dados financeiros mock se não existirem
+      if (Utils.load(KEYS.FATURAS, []).length === 0) {
+        const mockFaturas = [
+          {
+            id: 1,
+            descricao: 'Mensalidade Janeiro/2024',
+            valor: aluno.valorMensalidade,
+            vencimento: '2024-01-10',
+            status: 'paid',
+            dataPagamento: '2024-01-08',
+            formaPagamento: 'PIX'
+          },
+          {
+            id: 2,
+            descricao: 'Mensalidade Fevereiro/2024',
+            valor: aluno.valorMensalidade,
+            vencimento: '2024-02-10',
+            status: 'paid',
+            dataPagamento: '2024-02-09',
+            formaPagamento: 'Boleto'
+          },
+          {
+            id: 3,
+            descricao: 'Mensalidade Março/2024',
+            valor: aluno.valorMensalidade,
+            vencimento: '2024-03-10',
+            status: 'pending',
+            dataPagamento: null,
+            formaPagamento: null
+          }
+        ];
+        Utils.save(KEYS.FATURAS, mockFaturas);
+      }
+
+      if (Utils.load(KEYS.PAGAMENTOS, []).length === 0) {
+        const mockPagamentos = [
+          {
+            id: 1,
+            faturaId: 1,
+            valor: aluno.valorMensalidade,
+            data: '2024-01-08',
+            formaPagamento: 'PIX',
+            status: 'confirmed',
+            comprovante: 'PIX-20240108-001'
+          },
+          {
+            id: 2,
+            faturaId: 2,
+            valor: aluno.valorMensalidade,
+            data: '2024-02-09',
+            formaPagamento: 'Boleto',
+            status: 'confirmed',
+            comprovante: 'BOL-20240209-002'
+          }
+        ];
+        Utils.save(KEYS.PAGAMENTOS, mockPagamentos);
+      }
+
+      // Inicializar disponibilidades se não existirem
+      if (Utils.load(KEYS.DISPONIBILIDADE, []).length === 0) {
+        const mockDisponibilidade = [
+          {
+            id: 1,
+            dia: 2, // Terça
+            inicio: '19:00',
+            fim: '20:00',
+            recorrente: 'semanal',
+            observacoes: 'Preferência por conversação'
+          },
+          {
+            id: 2,
+            dia: 4, // Quinta
+            inicio: '20:00',
+            fim: '21:00',
+            recorrente: 'semanal',
+            observacoes: 'Foco em gramática'
+          }
+        ];
+        Utils.save(KEYS.DISPONIBILIDADE, mockDisponibilidade);
+      }
+
+      // ---------- NAVEGAÇÃO MÓVEL ----------
+      const mobileMenuBtn = $('#mobile-menu-btn');
+      const sidebar = $('#sidebar');
+
+      mobileMenuBtn?.addEventListener('click', () => {
+        sidebar.classList.toggle('show-mobile');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 1024) {
+          if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+            sidebar.classList.remove('show-mobile');
+          }
+        }
+      });
+
+      // ---------- NAVEGAÇÃO ----------
+      function hideAllSections() {
+        $$('.sec').forEach(section => section.classList.add('hidden'));
+      }
+
+      function showSection(sectionId) {
+        hideAllSections();
+        const section = $(`#${sectionId}`);
+        if (section) {
+          section.classList.remove('hidden');
+        }
+      }
+
+      function setActiveNav(targetSection) {
+        $$('.nav-item').forEach(item => item.classList.remove('active'));
+        const activeItem = $(`.nav-item[data-target="${targetSection}"]`);
+        if (activeItem) {
+          activeItem.classList.add('active');
+        }
+      }
+
+      $$('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const target = item.getAttribute('data-target');
+          showSection(target);
+          setActiveNav(target);
+          
+          if (window.innerWidth <= 1024) {
+            sidebar.classList.remove('show-mobile');
+          }
+          
+          switch(target) {
+            case 'dashboard':
+              renderDashboard();
+              break;
+            case 'agenda':
+              renderAgenda();
+              break;
+            case 'perfil':
+              renderPerfil();
+              break;
+            case 'financeiro':
+              renderFinanceiro();
+              break;
+            // Outras seções mantidas como placeholder
+          }
+        });
+      });
+
+      // ---------- MODO ESCURO ----------
+      const darkToggle = $('#dark-toggle');
+      const isDarkMode = Utils.load('portal_aluno_dark', false);
+      
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('bg-gray-900', 'text-gray-100');
+        darkToggle.checked = true;
+      }
+
+      darkToggle?.addEventListener('change', () => {
+        if (darkToggle.checked) {
+          document.documentElement.classList.add('dark');
+          document.body.classList.add('bg-gray-900', 'text-gray-100');
+          Utils.save('portal_aluno_dark', true);
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.body.classList.remove('bg-gray-900', 'text-gray-100');
+          Utils.save('portal_aluno_dark', false);
+        }
+      });
+
+      // ---------- HEADER ----------
+      $('#aluno-name').textContent = aluno.nome;
+      $('#aluno-mini').textContent = aluno.email;
+
+      $('#logout')?.addEventListener('click', () => {
+        if (confirm('Deseja realmente sair do sistema?')) {
+          Notifications.show('Logout', 'Sessão encerrada com sucesso', 'info');
+        }
+      });
+
+      // ---------- DASHBOARD ----------
+      let gastosChart;
+
+      function renderDashboard() {
+        const faturas = Utils.load(KEYS.FATURAS, []);
+        
+        // KPI Financeiro
+        const faturasAbertas = faturas.filter(f => f.status === 'pending').length;
+        $('#kpiFaturasAbertas').textContent = faturasAbertas;
+        
+        renderProgressoModulos();
+        renderAtividadeRecente();
+        renderContinueWatching();
+      }
+
+      function renderProgressoModulos() {
+        const container = $('#progressoModulos');
+        if (!container) return;
+        
+        // Mock data para progresso
+        const modulos = {
+          'Módulo 1 - Básico': { total: 5, concluidas: 4 },
+          'Módulo 2 - Intermediário': { total: 8, concluidas: 3 },
+          'Módulo 3 - Avançado': { total: 6, concluidas: 0 }
+        };
+        
+        container.innerHTML = '';
+        
+        Object.entries(modulos).forEach(([modulo, dados]) => {
+          const progresso = dados.total > 0 ? (dados.concluidas / dados.total) * 100 : 0;
+          
+          const div = document.createElement('div');
+          div.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-medium">${modulo}</span>
+              <span class="text-sm text-gray-600">${dados.concluidas}/${dados.total}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${progresso}%"></div>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      function renderAtividadeRecente() {
+        const container = $('#atividadeRecente');
+        if (!container) return;
+        
+        const atividades = [
+          { tipo: 'aula', texto: 'Assistiu "Vocabulário - Família"', tempo: '2 horas atrás' },
+          { tipo: 'pagamento', texto: 'Pagamento realizado via PIX', tempo: '1 dia atrás' },
+          { tipo: 'perfil', texto: 'Atualizou informações do perfil', tempo: '2 dias atrás' },
+          { tipo: 'agenda', texto: 'Sincronizou agenda com professor', tempo: '3 dias atrás' },
+          { tipo: 'aula', texto: 'Concluiu "Presente Simples"', tempo: '3 dias atrás' }
+        ];
+        
+        container.innerHTML = '';
+        
+        atividades.forEach(atividade => {
+          const div = document.createElement('div');
+          div.className = 'flex items-center gap-3 p-2 hover:bg-gray-50 rounded';
+          
+          const icon = atividade.tipo === 'aula' ? '📹' : 
+                       atividade.tipo === 'pagamento' ? '💳' :
+                       atividade.tipo === 'perfil' ? '👤' :
+                       atividade.tipo === 'agenda' ? '📅' :
+                       '📊';
+          
+          div.innerHTML = `
+            <div class="text-lg">${icon}</div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">${atividade.texto}</div>
+              <div class="text-xs text-gray-500">${atividade.tempo}</div>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      function renderContinueWatching() {
+        const container = $('#continueWatching');
+        if (!container) return;
+        
+        container.innerHTML = '<p class="text-gray-500 col-span-3 text-center py-8">Continue de onde parou! 🎓</p>';
+      }
+
+      // ---------- AGENDA & SINCRONIZAÇÃO ----------
+      let currentWeek = new Date();
+
+      function renderAgenda() {
+        renderStatusSincronizacao();
+        renderDisponibilidadeProfessor();
+        renderMinhaDisponibilidade();
+        renderAgendaSemanal();
+      }
+
+      function renderStatusSincronizacao() {
+        const agendaSync = Utils.load(KEYS.AGENDA_SYNC, { professorConnected: false, googleConnected: false });
+        
+        const professorStatus = $('#sync-status-professor');
+        const googleStatus = $('#sync-status-google');
+        
+        if (agendaSync.professorConnected) {
+          professorStatus.className = 'sync-status connected';
+          professorStatus.innerHTML = `
+            <div class="w-2 h-2 bg-current rounded-full"></div>
+            Professor: Conectado
+          `;
+        } else {
+          professorStatus.className = 'sync-status disconnected';
+          professorStatus.innerHTML = `
+            <div class="w-2 h-2 bg-current rounded-full"></div>
+            Professor: Desconectado
+          `;
+        }
+        
+        if (agendaSync.googleConnected) {
+          googleStatus.className = 'sync-status connected';
+          googleStatus.innerHTML = `
+            <div class="w-2 h-2 bg-current rounded-full"></div>
+            Google: Conectado
+          `;
+        } else {
+          googleStatus.className = 'sync-status disconnected';
+          googleStatus.innerHTML = `
+            <div class="w-2 h-2 bg-current rounded-full"></div>
+            Google: Desconectado
+          `;
+        }
+      }
+
+      function renderDisponibilidadeProfessor() {
+        const container = $('#professor-availability');
+        if (!container) return;
+        
+        // Tentar carregar agenda do professor
+        const professorAgenda = Utils.load(KEYS.PROFESSOR_AGENDA, { avail: [] });
+        const agendaSync = Utils.load(KEYS.AGENDA_SYNC, { professorConnected: false });
+        
+        container.innerHTML = '';
+        
+        if (!agendaSync.professorConnected) {
+          container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+              <div class="text-4xl mb-2">🔗</div>
+              <p>Conecte-se com seu professor para ver a disponibilidade</p>
+            </div>
+          `;
+          return;
+        }
+        
+        if (professorAgenda.avail.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+              <div class="text-4xl mb-2">📅</div>
+              <p>Professor ainda não definiu disponibilidades</p>
+            </div>
+          `;
+          return;
+        }
+        
+        professorAgenda.avail.forEach(disp => {
+          const div = document.createElement('div');
+          div.className = 'availability-slot';
+          
+          div.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium">${Utils.date.weekdayLongName(disp.dow)}</div>
+                <div class="text-sm text-gray-600">${disp.start} - ${disp.end}</div>
+              </div>
+              <button class="btn btn-success btn-sm" onclick="agendarAula('${disp.dow}', '${disp.start}', '${disp.end}')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
+                </svg>
+                Agendar
+              </button>
+            </div>
+          `;
+          
+          container.appendChild(div);
+        });
+      }
+
+      function renderMinhaDisponibilidade() {
+        const container = $('#minha-disponibilidade');
+        if (!container) return;
+        
+        const disponibilidades = Utils.load(KEYS.DISPONIBILIDADE, []);
+        
+        container.innerHTML = '';
+        
+        if (disponibilidades.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+              <div class="text-4xl mb-2">⏰</div>
+              <p>Adicione seus horários disponíveis</p>
+            </div>
+          `;
+          return;
+        }
+        
+        disponibilidades.forEach((disp, index) => {
+          const div = document.createElement('div');
+          div.className = 'availability-slot selected';
+          
+          div.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium">${Utils.date.weekdayLongName(disp.dia)}</div>
+                <div class="text-sm text-gray-600">${disp.inicio} - ${disp.fim}</div>
+                <div class="text-xs text-gray-500">${disp.recorrente}</div>
+                ${disp.observacoes ? `<div class="text-xs text-gray-400 italic">${disp.observacoes}</div>` : ''}
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="removerDisponibilidade(${index})">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"></path>
+                  <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zM8 7a1 1 0 012 0v6a1 1 0 11-2 0V7zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+              </button>
+            </div>
+          `;
+          
+          container.appendChild(div);
+        });
+      }
+
+      function renderAgendaSemanal() {
+        const container = $('#agenda-semanal');
+        if (!container) return;
+        
+        // Calcular semana atual
+        const startOfWeek = new Date(currentWeek);
+        startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay());
+        
+        $('#week-range').textContent = `${Utils.format.date(startOfWeek)} - ${Utils.format.date(Utils.date.addDays(startOfWeek, 6))}`;
+        
+        container.innerHTML = '';
+        
+        // Renderizar 7 dias da semana
+        for (let i = 0; i < 7; i++) {
+          const day = Utils.date.addDays(startOfWeek, i);
+          const dayDiv = document.createElement('div');
+          dayDiv.className = 'calendar-day';
+          
+          // Verificar se é hoje
+          const isToday = Utils.date.isoDate(day) === Utils.date.isoDate(new Date());
+          if (isToday) {
+            dayDiv.classList.add('today');
+          }
+          
+          // Header do dia
+          const header = document.createElement('div');
+          header.className = 'font-semibold text-sm mb-2';
+          header.innerHTML = `
+            <div>${Utils.date.weekdayName(day.getDay())}</div>
+            <div class="text-xs text-gray-500">${day.getDate()}</div>
+          `;
+          dayDiv.appendChild(header);
+          
+          // Eventos do dia (mock)
+          if (i === 2) { // Terça
+            const event = document.createElement('div');
+            event.className = 'calendar-event professor';
+            event.textContent = '19:00 - Aula de Inglês';
+            dayDiv.appendChild(event);
+          }
+          
+          if (i === 4) { // Quinta
+            const event = document.createElement('div');
+            event.className = 'calendar-event aluno';
+            event.textContent = '20:00 - Disponível';
+            dayDiv.appendChild(event);
+          }
+          
+          container.appendChild(dayDiv);
+        }
+      }
+
+      // ---------- PERFIL ----------
+      function renderPerfil() {
+        // Atualizar informações do perfil
+        $('#profile-name').textContent = perfil.nome;
+        $('#profile-email').textContent = perfil.email;
+        
+        // Avatar
+        const avatarEl = $('#profile-avatar span');
+        if (aluno.avatar && aluno.avatar.match(/[\u{1F300}-\u{1F6FF}]/u)) {
+          avatarEl.textContent = aluno.avatar;
+        } else {
+          avatarEl.textContent = Utils.generateInitials(perfil.nome);
+        }
+        $('#avatar-initials').textContent = avatarEl.textContent;
+        
+        // Preencher formulários
+        $('#perfil-nome').value = perfil.nome || '';
+        $('#perfil-email').value = perfil.email || '';
+        $('#perfil-telefone').value = perfil.telefone || '';
+        $('#perfil-nascimento').value = perfil.nascimento || '';
+        $('#perfil-cpf').value = perfil.cpf || '';
+        $('#perfil-profissao').value = perfil.profissao || '';
+        
+        // Endereço
+        $('#endereco-cep').value = endereco.cep || '';
+        $('#endereco-logradouro').value = endereco.logradouro || '';
+        $('#endereco-numero').value = endereco.numero || '';
+        $('#endereco-complemento').value = endereco.complemento || '';
+        $('#endereco-bairro').value = endereco.bairro || '';
+        $('#endereco-cidade').value = endereco.cidade || '';
+        $('#endereco-estado').value = endereco.estado || '';
+        $('#endereco-pais').value = endereco.pais || '';
+        
+        // Preferências
+        $('#objetivo-estudo').value = perfil.objetivoEstudo || '';
+        $('#nivel-atual').value = perfil.nivelAtual || '';
+        
+        // Horários preferidos
+        $$('input[type="checkbox"][value]').forEach(checkbox => {
+          checkbox.checked = perfil.horariosPreferidos?.includes(checkbox.value) || false;
+        });
+        
+        // Configurações
+        $('#notif-email').checked = perfil.configuracoes?.notifEmail ?? true;
+        $('#notif-push').checked = perfil.configuracoes?.notifPush ?? true;
+        $('#lembrete-estudos').checked = perfil.configuracoes?.lembreteEstudos ?? true;
+        $('#autoplay-videos').checked = perfil.configuracoes?.autoplayVideos ?? false;
+        
+        // Marcar plano atual
+        $$('.plan-card').forEach(card => {
+          card.classList.remove('current');
+          if (card.getAttribute('data-plan') === aluno.plano) {
+            card.classList.add('current');
+          }
+        });
+      }
+
+      // ---------- FINANCEIRO (mantido igual) ----------
+      function renderFinanceiro() {
+        const faturas = Utils.load(KEYS.FATURAS, []);
+        const pagamentos = Utils.load(KEYS.PAGAMENTOS, []);
+        
+        // Mensalidade atual
+        $('#finMensalidadeAtual').textContent = Utils.format.currency(aluno.valorMensalidade);
+        
+        // Total pago em 2024
+        const totalPago = pagamentos
+          .filter(p => p.status === 'confirmed' && new Date(p.data).getFullYear() === 2024)
+          .reduce((sum, p) => sum + p.valor, 0);
+        $('#finTotalPago').textContent = Utils.format.currency(totalPago);
+        
+        // Faturas em aberto
+        const faturasAbertas = faturas.filter(f => f.status === 'pending').length;
+        $('#finFaturasAbertas').textContent = faturasAbertas;
+        
+        // Próximo vencimento
+        const proximaFatura = faturas
+          .filter(f => f.status === 'pending')
+          .sort((a, b) => new Date(a.vencimento) - new Date(b.vencimento))[0];
+        
+        $('#finProximoVenc').textContent = proximaFatura ? 
+          new Date(proximaFatura.vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 
+          '--/--';
+        
+        renderListaFaturas(faturas);
+        renderListaPagamentos(pagamentos);
+        
+        setTimeout(() => {
+          renderGastosChart(faturas, pagamentos);
+        }, 100);
+      }
+
+      function renderListaFaturas(faturas) {
+        const container = $('#listaFaturas');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        faturas.slice(0, 5).forEach(fatura => {
+          const div = document.createElement('div');
+          div.className = 'p-4 border rounded-lg';
+          
+          const statusClass = fatura.status === 'paid' ? 'pill-success' : 'pill-warning';
+          const statusText = fatura.status === 'paid' ? 'Pago' : 'Pendente';
+          
+          div.innerHTML = `
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <h4 class="font-semibold text-sm">${fatura.descricao}</h4>
+                <div class="text-xs text-gray-600 mt-1">Vencimento: ${Utils.format.date(fatura.vencimento)}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold">${Utils.format.currency(fatura.valor)}</div>
+                <span class="pill ${statusClass} text-xs mt-1">${statusText}</span>
+              </div>
+            </div>
+          `;
+          
+          container.appendChild(div);
+        });
+      }
+
+      function renderListaPagamentos(pagamentos) {
+        const container = $('#listaPagamentos');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        pagamentos.slice(0, 5).forEach(pagamento => {
+          const div = document.createElement('div');
+          div.className = 'p-3 border rounded-lg';
+          
+          div.innerHTML = `
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <h4 class="font-medium text-sm">Pagamento realizado</h4>
+                <div class="text-xs text-gray-600 mt-1">${Utils.format.date(pagamento.data)} • ${pagamento.formaPagamento}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold text-green-600">${Utils.format.currency(pagamento.valor)}</div>
+                <span class="pill pill-success text-xs">Confirmado</span>
+              </div>
+            </div>
+          `;
+          
+          container.appendChild(div);
+        });
+      }
+
+      function renderGastosChart(faturas, pagamentos) {
+        const canvas = $('#gastosChart');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        
+        if (gastosChart) {
+          gastosChart.destroy();
+        }
+        
+        // Mock data para o gráfico
+        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const valores = [350, 350, 350, 0, 250, 250, 250, 350, 350, 350, 0, 0];
+        
+        gastosChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: meses,
+            datasets: [{
+              label: 'Gastos mensais (R$)',
+              data: valores,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4,
+              pointBackgroundColor: '#10b981',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              pointRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Valor (R$)'
+                },
+                ticks: {
+                  callback: function(value) {
+                    return 'R$ ' + value.toFixed(0);
+                  }
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }
+        });
+      }
+
+      // ---------- EVENT LISTENERS ----------
+      
+      // Sincronização com Professor
+      $('#sync-professor')?.addEventListener('click', () => {
+        const agendaSync = Utils.load(KEYS.AGENDA_SYNC, {});
+        
+        Notifications.show('Sincronizando', 'Conectando com agenda do professor...', 'info');
+        
+        setTimeout(() => {
+          agendaSync.professorConnected = !agendaSync.professorConnected;
+          Utils.save(KEYS.AGENDA_SYNC, agendaSync);
+          
+          const status = agendaSync.professorConnected ? 'conectado' : 'desconectado';
+          Notifications.show('Sincronização', `Professor ${status} com sucesso!`, 'success');
+          
+          renderAgenda();
+        }, 2000);
+      });
+      
+      // Conexão com Google
+      $('#connect-google')?.addEventListener('click', () => {
+        const agendaSync = Utils.load(KEYS.AGENDA_SYNC, {});
+        
+        Notifications.show('Google Calendar', 'Simulando conexão com Google...', 'info');
+        
+        setTimeout(() => {
+          agendaSync.googleConnected = !agendaSync.googleConnected;
+          Utils.save(KEYS.AGENDA_SYNC, agendaSync);
+          
+          const status = agendaSync.googleConnected ? 'conectado' : 'desconectado';
+          Notifications.show('Google Calendar', `Google ${status} com sucesso!`, 'success');
+          
+          renderAgenda();
+        }, 1500);
+      });
+      
+      // Adicionar disponibilidade
+      $('#add-availability')?.addEventListener('click', () => {
+        $('#modal-disponibilidade').style.display = 'block';
+      });
+      
+      $('#disp-close, #disp-cancel')?.forEach(btn => {
+        btn?.addEventListener('click', () => {
+          $('#modal-disponibilidade').style.display = 'none';
+        });
+      });
+      
+      $('#form-disponibilidade')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const novaDisponibilidade = {
+          id: Date.now(),
+          dia: parseInt($('#disp-dia').value),
+          inicio: $('#disp-inicio').value,
+          fim: $('#disp-fim').value,
+          recorrente: $('#disp-recorrente').value,
+          observacoes: $('#disp-obs').value.trim()
+        };
+        
+        const disponibilidades = Utils.load(KEYS.DISPONIBILIDADE, []);
+        disponibilidades.push(novaDisponibilidade);
+        Utils.save(KEYS.DISPONIBILIDADE, disponibilidades);
+        
+        $('#modal-disponibilidade').style.display = 'none';
+        $('#form-disponibilidade').reset();
+        
+        renderAgenda();
+        Notifications.show('Disponibilidade', 'Nova disponibilidade adicionada!', 'success');
+      });
+      
+      // Navegação semanal
+      $('#prev-week')?.addEventListener('click', () => {
+        currentWeek = Utils.date.addDays(currentWeek, -7);
+        renderAgendaSemanal();
+      });
+      
+      $('#next-week')?.addEventListener('click', () => {
+        currentWeek = Utils.date.addDays(currentWeek, 7);
+        renderAgendaSemanal();
+      });
+      
+      // Alterar foto do perfil
+      $('#change-avatar')?.addEventListener('click', () => {
+        $('#modal-avatar').style.display = 'block';
+      });
+      
+      $('#avatar-close')?.addEventListener('click', () => {
+        $('#modal-avatar').style.display = 'none';
+      });
+      
+      $('#upload-avatar')?.addEventListener('click', () => {
+        $('#file-avatar').click();
+      });
+      
+      $$('.avatar-option').forEach(option => {
+        option.addEventListener('click', () => {
+          const avatar = option.getAttribute('data-avatar');
+          aluno.avatar = avatar;
+          Utils.save(KEYS.ALUNO, aluno);
+          
+          // Atualizar preview
+          $('#preview-initials').textContent = avatar;
+          $('#avatar-initials').textContent = avatar;
+          
+          $('#modal-avatar').style.display = 'none';
+          Notifications.show('Avatar', 'Avatar atualizado com sucesso!', 'success');
+        });
+      });
+      
+      // Formulário do perfil
+      $('#form-perfil')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        perfil.nome = $('#perfil-nome').value.trim();
+        perfil.email = $('#perfil-email').value.trim();
+        perfil.telefone = $('#perfil-telefone').value.trim();
+        perfil.nascimento = $('#perfil-nascimento').value;
+        perfil.cpf = $('#perfil-cpf').value.trim();
+        perfil.profissao = $('#perfil-profissao').value.trim();
+        
+        // Atualizar dados do aluno também
+        aluno.nome = perfil.nome;
+        aluno.email = perfil.email;
+        
+        Utils.save(KEYS.PERFIL, perfil);
+        Utils.save(KEYS.ALUNO, aluno);
+        
+        // Atualizar header
+        $('#aluno-name').textContent = aluno.nome;
+        $('#aluno-mini').textContent = aluno.email;
+        
+        Notifications.show('Perfil', 'Informações atualizadas com sucesso!', 'success');
+      });
+      
+      // Formulário do endereço
+      $('#form-endereco')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        endereco.cep = $('#endereco-cep').value.trim();
+        endereco.logradouro = $('#endereco-logradouro').value.trim();
+        endereco.numero = $('#endereco-numero').value.trim();
+        endereco.complemento = $('#endereco-complemento').value.trim();
+        endereco.bairro = $('#endereco-bairro').value.trim();
+        endereco.cidade = $('#endereco-cidade').value.trim();
+        endereco.estado = $('#endereco-estado').value;
+        endereco.pais = $('#endereco-pais').value.trim();
+        
+        Utils.save(KEYS.ENDERECO, endereco);
+        
+        Notifications.show('Endereço', 'Endereço atualizado com sucesso!', 'success');
+      });
+
+      // ---------- FUNÇÕES GLOBAIS ----------
+      
+      window.agendarAula = (dow, start, end) => {
+        Notifications.show('Agendamento', `Solicitação enviada para ${Utils.date.weekdayLongName(parseInt(dow))} ${start}-${end}`, 'success');
+      };
+      
+      window.removerDisponibilidade = (index) => {
+        const disponibilidades = Utils.load(KEYS.DISPONIBILIDADE, []);
+        disponibilidades.splice(index, 1);
+        Utils.save(KEYS.DISPONIBILIDADE, disponibilidades);
+        
+        renderAgenda();
+        Notifications.show('Disponibilidade', 'Disponibilidade removida', 'info');
+      };
+
+      // ---------- SYNC E OUTRAS FUNCIONALIDADES ----------
+      $('#sync-progresso')?.addEventListener('click', () => {
+        Notifications.show('Sincronização', 'Sincronizando dados com o servidor...', 'info');
+        
+        setTimeout(() => {
+          Notifications.show('Sucesso', 'Dados sincronizados com sucesso!', 'success');
+          renderDashboard();
+        }, 2000);
+      });
+
+      // ---------- INICIALIZAÇÃO ----------
+      function inicializar() {
+        renderDashboard();
+        
+        setTimeout(() => {
+          if (config.notifications) {
+            Notifications.show('Portal do Aluno', `Bem-vindo, ${aluno.nome}!`, 'success');
+          }
+        }, 1000);
+        
+        console.log('Portal do Aluno v2.0 com Perfil e Agenda Sincronizada inicializado!');
+      }
+
+      inicializar();
+      
+    })();
+  </script>
+</body>
+</html>

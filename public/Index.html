@@ -1,0 +1,2518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portal do Professor - Versão Avançada</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>:root {
+      --primary: #1d4ed8;
+      --primary-dark: #1e40af;
+      --secondary: #64748b;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --sidebar-width: 280px;
+    }
+    .sidebar{
+      background:linear-gradient(135deg,#1e3a8a,#3b82f6);
+      height:100vh;
+      position:fixed;
+      width:var(--sidebar-width);
+      overflow-y:auto;
+      z-index:20;
+      transition: transform 0.3s ease;
+    }
+    .sidebar.hidden-mobile {
+      transform: translateX(-100%);
+    }
+    .main{
+      margin-left:var(--sidebar-width);
+      padding:20px;
+      min-height:100vh;
+      transition: margin-left 0.3s ease;
+    }
+    .main.expanded {
+      margin-left: 0;
+    }
+    @media (max-width:1024px){
+      .sidebar{
+        position:fixed;
+        transform: translateX(-100%);
+      }
+      .sidebar.show-mobile {
+        transform: translateX(0);
+      }
+      .main{
+        margin-left:0;
+      }
+    }
+    .card{
+      box-shadow:0 4px 12px rgba(0,0,0,.08);
+      border-radius:16px;
+      overflow:hidden;
+      transition: all 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 8px 25px rgba(0,0,0,.12);
+    }
+    .modal{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.6);
+      z-index:100;
+      backdrop-filter: blur(2px);
+    }
+    .modal-content{
+      background:#fff;
+      margin:2% auto;
+      padding:24px;
+      border-radius:16px;
+      max-width:1000px;
+      width:95%;
+      max-height:90vh;
+      overflow-y:auto;
+      animation: modalSlideIn 0.3s ease;
+    }
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+    }
+    th,td{
+      padding:12px 16px;
+      border-bottom:1px solid #f1f5f9;
+      text-align:left;
+      white-space: nowrap;
+    }
+    th{
+      background:#f8fafc;
+      font-weight: 600;
+      color: #475569;
+      font-size: 0.875rem;
+    }
+    tr:hover {
+      background: #f8fafc;
+    }
+    .btn{
+      padding:10px 18px;
+      border-radius:12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+    .btn-primary{
+      background:var(--primary);
+      color:#fff;
+    }
+    .btn-primary:hover{
+      background:var(--primary-dark);
+    }
+    .btn-success{
+      background:var(--success);
+      color:#fff;
+    }
+    .btn-warning{
+      background:var(--warning);
+      color:#fff;
+    }
+    .btn-danger{
+      background:var(--danger);
+      color:#fff;
+    }
+    .btn-gray{
+      background:#e5e7eb;
+      color:#374151;
+    }
+    .btn-gray:hover{
+      background:#d1d5db;
+    }
+    .btn-ghost{
+      background:transparent;
+      border: 1px solid #e5e7eb;
+    }
+    .btn-ghost:hover{
+      background:#f9fafb;
+    }
+    .pill{
+      font-size:.75rem;
+      background:#eef2ff;
+      color:#3730a3;
+      border:1px solid #e0e7ff;
+      padding:4px 12px;
+      border-radius:999px;
+      font-weight: 500;
+    }
+    .pill-success {
+      background: #dcfce7;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+    .pill-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+    .pill-danger {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+    .dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      display:inline-block;
+      margin-right:8px;
+    }
+    .kpi-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), #3b82f6);
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      margin: 4px 0;
+      border-radius: 12px;
+      color: rgba(255,255,255,0.9);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+    .nav-item.active {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      font-weight: 600;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+    .notification.show {
+      transform: translateX(0);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .main {
+        padding: 12px;
+      }
+    }</style>
+</head>
+<body>
+  <!-- Mobile Menu Button -->
+<button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-30 bg-blue-600 text-white p-3 rounded-full shadow-lg">
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+  </svg>
+</button>
+  <!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="p-6 text-white"><!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+      <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">👩‍🏫</div>
+      <div>
+        <h2 class="text-xl font-bold">Portal do Professor</h2>
+        <div id="prof-mini" class="text-sm opacity-80">—</div>
+      </div>
+    </div>
+      <!-- Navigation -->
+    <nav class="space-y-2">
+      <div class="nav-item active" data-target="dash">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+        </svg>
+          Dashboard
+      </div>
+      <div class="nav-item" data-target="alunos">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+        </svg>
+          Turmas &amp; Alunos
+      </div>
+      <div class="nav-item" data-target="lancar">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+          Lançar Notas
+      </div>
+      <div class="nav-item" data-target="agenda">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+        </svg>
+          Agenda
+      </div>
+      <div class="nav-item" data-target="relatorios">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+        </svg>
+          Relatórios
+      </div>
+      <div class="nav-item" data-target="cfg">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+        </svg>
+          Configurações
+      </div>
+    </nav>
+      <!-- Settings -->
+    <div class="mt-8 p-4 bg-white/10 rounded-xl">
+      <div class="flex items-center justify-between mb-4">
+        <span class="font-medium">Modo escuro</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input id="dark-toggle" type="checkbox" class="sr-only peer">
+          <div class="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="font-medium">Backup automático</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input id="backup-toggle" type="checkbox" class="sr-only peer" checked="">
+          <div class="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+        </label>
+      </div>
+    </div>
+    <button id="logout" class="mt-6 w-full bg-red-500/20 hover:bg-red-500/30 rounded-xl px-4 py-3 transition-colors">
+      <div class="flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"></path>
+        </svg>
+          Sair
+      </div>
+    </button>
+  </div>
+</aside>
+  <!-- MAIN -->
+<main class="main" id="main-content"><!-- DASHBOARD -->
+  <section id="dash" class="sec">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">Olá, 
+          <span id="prof-name">Professor(a)</span> 👋
+        </h1>
+        <p class="text-gray-600">Aqui está um resumo das suas atividades hoje</p>
+      </div>
+      <div class="flex gap-3">
+        <button id="export-data" class="btn btn-gray">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+            Exportar Dados
+        </button>
+        <button id="refresh-data" class="btn btn-primary">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+          </svg>
+            Atualizar
+        </button>
+      </div>
+    </div>
+      <!-- KPIs -->
+    <div class="stats-grid mb-8">
+      <div class="card bg-white p-6 kpi-card">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-500 mb-1">Alunos ativos</div>
+            <div id="kpiAlunos" class="text-3xl font-bold text-blue-600">0</div>
+            <div class="text-xs text-gray-400 mt-1">↗ +2 este mês</div>
+          </div>
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="card bg-white p-6 kpi-card">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-500 mb-1">Aulas esta semana</div>
+            <div id="kpiAulasSemana" class="text-3xl font-bold text-emerald-600">0</div>
+            <div class="text-xs text-gray-400 mt-1">🎯 Meta: 15</div>
+          </div>
+          <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="card bg-white p-6 kpi-card">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-500 mb-1">Notas pendentes</div>
+            <div id="kpiNotasPend" class="text-3xl font-bold text-amber-600">0</div>
+            <div class="text-xs text-gray-400 mt-1">⚠ Últimos 7 dias</div>
+          </div>
+          <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="card bg-white p-6 kpi-card">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-500 mb-1">Estimativa mensal</div>
+            <div id="kpiEstimativaMes" class="text-3xl font-bold text-purple-700">R$ 0,00</div>
+            <div class="text-xs text-gray-400 mt-1">💰 Base: R$ 25/h</div>
+          </div>
+          <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+      <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Performance das Notas (últimos 30 dias)</h3>
+        <canvas id="notasChart" height="300"></canvas>
+      </div>
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Frequência por Turma</h3>
+        <canvas id="frequenciaChart" height="300"></canvas>
+      </div>
+    </div>
+      <!-- Info Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+          </svg>
+            Próximas aulas (7 dias)
+        </h3>
+        <div id="proxAulas" class="space-y-3"></div>
+      </div>
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+          </svg>
+            Dicas e Lembretes
+        </h3>
+        <div class="space-y-4">
+          <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+            <div class="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+            <div>
+              <p class="font-medium text-blue-900">Lançamento rápido</p>
+              <p class="text-sm text-blue-700">Use 
+                <strong>Lançar Notas</strong> para registrar após cada aula
+              </p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+            <div class="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+            <div>
+              <p class="font-medium text-green-900">Sincronização</p>
+              <p class="text-sm text-green-700">Mantenha sua agenda sincronizada com as preferências dos alunos</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
+            <div class="w-2 h-2 bg-purple-400 rounded-full mt-2"></div>
+            <div>
+              <p class="font-medium text-purple-900">Relatórios</p>
+              <p class="text-sm text-purple-700">Gere relatórios mensais para acompanhar o progresso</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+      <!-- Financial Summary -->
+    <div class="card bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6 mt-8">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold">Resumo Financeiro do Mês</h3>
+        <div class="text-sm opacity-90">Base: 
+          <strong>R$ 25/h</strong> • 
+          <strong>4,33</strong> sem/mês
+        </div>
+      </div>
+      <div class="flex items-center gap-6 mb-6">
+        <div class="text-4xl font-bold" id="finTotalMes">R$ 0,00</div>
+        <button id="fin-edit" class="btn bg-white/20 hover:bg-white/30 text-white border-none">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+          </svg>
+            Editar carga semanal
+        </button>
+      </div>
+      <div class="table-responsive bg-white/10 rounded-lg">
+        <table class="text-white">
+          <thead>
+            <tr>
+              <th class="text-white/90">Aluno</th>
+              <th class="text-white/90">Aulas/sem</th>
+              <th class="text-white/90">Duração</th>
+              <th class="text-white/90">Horas/sem</th>
+              <th class="text-white/90">Estimativa mês</th>
+            </tr>
+          </thead>
+          <tbody id="fin-tbl-alunos"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+    <!-- ALUNOS -->
+  <section id="alunos" class="sec hidden">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">Minhas turmas e alunos</h1>
+        <p class="text-gray-600">Gerencie seus alunos e acompanhe o progresso</p>
+      </div>
+      <div class="flex gap-3">
+        <div class="relative">
+          <input id="aluno-q" class="form-input pl-10 w-64" placeholder="Buscar por nome ou turma">
+          <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <button id="add-aluno" class="btn btn-primary">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
+          </svg>
+            Novo Aluno
+        </button>
+      </div>
+    </div>
+    <div class="card bg-white">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Turma/Nível</th>
+              <th>Disciplina</th>
+              <th>Próxima aula</th>
+              <th>Status</th>
+              <th>Média</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-alunos"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+    <!-- LANÇAR -->
+  <section id="lancar" class="sec hidden">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold mb-2">Lançar Notas &amp; Frequência</h1>
+      <p class="text-gray-600">Registre rapidamente notas e presença dos alunos</p>
+    </div>
+    <div class="card bg-white p-6 mb-6">
+      <h3 class="text-lg font-semibold mb-4">Lançamento rápido</h3>
+      <form id="form-rapido" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="form-group">
+          <label class="form-label">Aluno</label>
+          <select id="lr-aluno" class="form-input"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input id="lr-data" type="date" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Disciplina</label>
+          <input id="lr-disc" class="form-input" placeholder="Inglês A2, etc.">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nota (0-10)</label>
+          <input id="lr-nota" type="number" min="0" max="10" step="0.1" class="form-input">
+        </div>
+        <div class="form-group flex items-center gap-3 pt-8">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="lr-presente" type="checkbox" class="w-4 h-4 text-blue-600 rounded">
+            <span class="font-medium">Presente</span>
+          </label>
+        </div>
+        <div class="form-group md:col-span-2 lg:col-span-5">
+          <label class="form-label">Observações</label>
+          <textarea id="lr-obs" rows="2" class="form-input" placeholder="Desempenho, dificuldades, pontos fortes..."></textarea>
+        </div>
+        <div class="md:col-span-2 lg:col-span-5">
+          <button class="btn btn-primary" type="submit">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+              Lançar registro
+          </button>
+        </div>
+      </form>
+    </div>
+    <div class="card bg-white">
+      <div class="p-6 border-b">
+        <h3 class="text-lg font-semibold">Histórico recente</h3>
+        <p class="text-sm text-gray-600 mt-1">Últimos 20 lançamentos realizados</p>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Aluno</th>
+              <th>Disciplina</th>
+              <th>Nota</th>
+              <th>Presença</th>
+              <th>Observações</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-hist"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+    <!-- AGENDA -->
+  <section id="agenda" class="sec hidden">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">Agenda &amp; disponibilidade</h1>
+        <p class="text-gray-600">Organize seus horários e sincronize com alunos</p>
+      </div>
+      <div class="flex gap-3 text-sm">
+        <span class="pill">Google Agenda</span>
+        <span class="pill pill-success">Backup ativo</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Disponibilidades recorrentes</h3>
+        <form id="form-disp" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <div class="form-group">
+            <label class="form-label">Dia da semana</label>
+            <select id="disp-dow" class="form-input">
+              <option value="1">Segunda</option>
+              <option value="2">Terça</option>
+              <option value="3">Quarta</option>
+              <option value="4">Quinta</option>
+              <option value="5">Sexta</option>
+              <option value="6">Sábado</option>
+              <option value="0">Domingo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Início</label>
+            <input id="disp-ini" type="time" class="form-input" value="18:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fim</label>
+            <input id="disp-fim" type="time" class="form-input" value="20:00">
+          </div>
+          <div class="form-group flex items-end">
+            <button class="btn btn-primary w-full" type="submit">Adicionar</button>
+          </div>
+        </form>
+        <div id="disp-list" class="space-y-2"></div>
+      </div>
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Eventos e aulas específicas</h3>
+        <form id="form-evt" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <div class="form-group">
+            <label class="form-label">Data</label>
+            <input id="evt-data" type="date" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Início</label>
+            <input id="evt-ini" type="time" class="form-input" value="19:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fim</label>
+            <input id="evt-fim" type="time" class="form-input" value="20:00">
+          </div>
+          <div class="form-group flex items-end">
+            <button class="btn btn-primary w-full" type="submit">Adicionar</button>
+          </div>
+          <div class="form-group md:col-span-4">
+            <label class="form-label">Título/Descrição</label>
+            <input id="evt-titulo" class="form-input" placeholder="Aula B1 – João e Maria">
+          </div>
+        </form>
+        <div id="evt-list" class="space-y-2"></div>
+      </div>
+    </div>
+      <!-- Actions -->
+    <div class="card bg-white p-6 mb-6">
+      <div class="flex flex-wrap gap-3 mb-4">
+        <button id="sync-alunos" class="btn btn-primary">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+          </svg>
+            Sincronizar com alunos
+        </button>
+        <button id="ics-export" class="btn btn-gray">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+            Exportar .ics
+        </button>
+        <label class="btn btn-ghost cursor-pointer">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+            Importar .ics
+          <input id="ics-import" type="file" accept=".ics,text/calendar" class="hidden">
+        </label>
+        <span class="pill" id="gg-status">Google Agenda: desconectado</span>
+        <button id="gg-toggle" class="btn btn-gray">Conectar Google</button>
+      </div>
+      <div id="sync-res" class="text-sm text-gray-600"></div>
+    </div>
+      <!-- Weekly View -->
+    <div class="card bg-white p-6">
+      <h3 class="text-lg font-semibold mb-4">Visão da semana</h3>
+      <div id="semana" class="grid grid-cols-1 md:grid-cols-7 gap-4"></div>
+    </div>
+  </section>
+    <!-- RELATÓRIOS (NEW) -->
+  <section id="relatorios" class="sec hidden">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold mb-2">Relatórios e Análises</h1>
+      <p class="text-gray-600">Analise o desempenho e gere relatórios detalhados</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+        <h3 class="text-lg font-semibold mb-2">Relatório Mensal</h3>
+        <p class="text-sm opacity-90 mb-4">Desempenho completo do mês atual</p>
+        <button id="rel-mensal" class="btn bg-white/20 hover:bg-white/30 text-white border-none">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+            Gerar PDF
+        </button>
+      </div>
+      <div class="card bg-gradient-to-r from-green-500 to-green-600 text-white p-6">
+        <h3 class="text-lg font-semibold mb-2">Desempenho por Aluno</h3>
+        <p class="text-sm opacity-90 mb-4">Evolução individual detalhada</p>
+        <button id="rel-aluno" class="btn bg-white/20 hover:bg-white/30 text-white border-none">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+            Selecionar aluno
+        </button>
+      </div>
+      <div class="card bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6">
+        <h3 class="text-lg font-semibold mb-2">Análise Financeira</h3>
+        <p class="text-sm opacity-90 mb-4">Receita e projeções</p>
+        <button id="rel-financeiro" class="btn bg-white/20 hover:bg-white/30 text-white border-none">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+          </svg>
+            Visualizar
+        </button>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Estatísticas gerais</h3>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Média geral das notas</span>
+            <span id="stat-media" class="font-bold text-lg">-</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Taxa de presença</span>
+            <span id="stat-presenca" class="font-bold text-lg">-</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Aulas ministradas (mês)</span>
+            <span id="stat-aulas" class="font-bold text-lg">-</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600">Alunos com nota &lt; 6.0</span>
+            <span id="stat-baixo" class="font-bold text-lg text-red-600">-</span>
+          </div>
+        </div>
+      </div>
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Distribuição de notas</h3>
+        <canvas id="distribuicaoChart" height="200"></canvas>
+      </div>
+    </div>
+  </section>
+    <!-- CONFIG -->
+  <section id="cfg" class="sec hidden">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold mb-2">Configurações</h1>
+      <p class="text-gray-600">Personalize suas preferências e dados do perfil</p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Perfil do professor</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Nome completo</label>
+            <input id="cfg-nome" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input id="cfg-email" type="email" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefone</label>
+            <input id="cfg-tel" class="form-input">
+          </div>
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Idiomas que ensina</label>
+            <input id="cfg-idiomas" class="form-input" placeholder="Inglês, Francês, Espanhol">
+          </div>
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Valor hora/aula (R$)</label>
+            <input id="cfg-valor" type="number" step="0.01" class="form-input" value="25.00">
+          </div>
+        </div>
+        <div class="mt-6">
+          <button id="cfg-save" class="btn btn-primary">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+              Salvar alterações
+          </button>
+        </div>
+      </div>
+      <div class="card bg-white p-6">
+        <h3 class="text-lg font-semibold mb-4">Preferências do sistema</h3>
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="font-medium">Notificações push</h4>
+              <p class="text-sm text-gray-600">Receber avisos sobre aulas e lembretes</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="cfg-notifications" type="checkbox" class="sr-only peer" checked="">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="font-medium">Auto-backup diário</h4>
+              <p class="text-sm text-gray-600">Salvar automaticamente os dados todos os dias</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="cfg-autobackup" type="checkbox" class="sr-only peer" checked="">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="font-medium">Modo compacto</h4>
+              <p class="text-sm text-gray-600">Interface mais densa para telas pequenas</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="cfg-compact" type="checkbox" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+        </div>
+        <hr class="my-6">
+        <div class="space-y-4">
+          <h4 class="font-medium text-gray-900">Gerenciamento de dados</h4>
+          <div class="flex gap-3">
+            <button id="export-backup" class="btn btn-gray flex-1">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+              </svg>
+                Exportar backup
+            </button>
+            <label class="btn btn-gray flex-1 cursor-pointer">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+                Importar backup
+              <input id="import-backup" type="file" accept=".json" class="hidden">
+            </label>
+          </div>
+          <button id="reset-data" class="btn btn-danger w-full">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"></path>
+              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zM8 7a1 1 0 012 0v6a1 1 0 11-2 0V7zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+              Limpar todos os dados
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+  <!-- MODAIS -->
+  <!-- MODAL LANÇAMENTO POR ALUNO -->
+<div id="modal-lancar" class="modal">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold">Lançar nota e frequência — 
+        <span id="ml-aluno" class="text-blue-600"></span>
+      </h3>
+      <button id="ml-close" class="btn btn-gray">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+    <form id="ml-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <input type="hidden" id="ml-id-aluno">
+      <div class="form-group">
+        <label class="form-label">Data da aula</label>
+        <input id="ml-data" type="date" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Disciplina</label>
+        <input id="ml-disc" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nota (0-10)</label>
+        <input id="ml-nota" type="number" min="0" max="10" step="0.1" class="form-input">
+      </div>
+      <div class="form-group flex items-center gap-3 pt-8">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input id="ml-presente" type="checkbox" class="w-4 h-4 text-blue-600 rounded">
+          <span class="font-medium">Presente</span>
+        </label>
+      </div>
+      <div class="form-group lg:col-span-5">
+        <label class="form-label">Observações</label>
+        <textarea id="ml-obs" rows="3" class="form-input" placeholder="Desempenho, dificuldades, evolução..."></textarea>
+      </div>
+      <div class="lg:col-span-5">
+        <button class="btn btn-primary" type="submit">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+          </svg>
+            Salvar lançamento
+        </button>
+      </div>
+    </form>
+    <div>
+      <h4 class="font-semibold mb-3">Histórico do aluno (últimos 10)</h4>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Disciplina</th>
+              <th>Nota</th>
+              <th>Presença</th>
+              <th>Observações</th>
+            </tr>
+          </thead>
+          <tbody id="ml-hist"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+  <!-- MODAL FINANCEIRO -->
+<div id="modal-fin" class="modal">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold">Configurar carga semanal por aluno</h3>
+      <button id="fin-close" class="btn btn-gray">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="bg-blue-50 p-4 rounded-lg mb-6">
+      <p class="text-sm text-blue-700">
+        <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+        </svg>
+          Configure quantas aulas por semana e a duração de cada aula. A estimativa mensal considera 
+        <strong>4,33 semanas/mês</strong> e sua tarifa atual.
+      </p>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Aulas/semana</th>
+            <th>Duração (minutos)</th>
+            <th>Horas/semana</th>
+            <th>Estimativa/mês</th>
+          </tr>
+        </thead>
+        <tbody id="fin-edit-tbody"></tbody>
+      </table>
+    </div>
+    <div class="mt-6 flex gap-3">
+      <button id="fin-save" class="btn btn-primary">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+        </svg>
+          Salvar configurações
+      </button>
+      <button id="fin-cancel" class="btn btn-gray">Cancelar</button>
+    </div>
+  </div>
+</div>
+  <!-- MODAL NOVO ALUNO -->
+<div id="modal-aluno" class="modal">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold">Cadastrar novo aluno</h3>
+      <button id="aluno-close" class="btn btn-gray">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+    <form id="aluno-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-group">
+        <label class="form-label">Nome completo</label>
+        <input id="aluno-nome" class="form-input" required="">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Turma/Nível</label>
+        <input id="aluno-turma" class="form-input" placeholder="A2 Noite, B1 Manhã">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Disciplina</label>
+        <input id="aluno-disciplina" class="form-input" placeholder="Inglês, Francês">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select id="aluno-status" class="form-input">
+          <option value="Ativo">Ativo</option>
+          <option value="Inativo">Inativo</option>
+          <option value="Pausado">Pausado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Próxima aula (data)</label>
+        <input id="aluno-data" type="date" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Horário</label>
+        <input id="aluno-horario" type="time" class="form-input" value="19:00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aulas por semana</label>
+        <input id="aluno-aulas" type="number" min="1" max="7" class="form-input" value="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duração (minutos)</label>
+        <input id="aluno-duracao" type="number" min="15" step="15" class="form-input" value="60">
+      </div>
+      <div class="md:col-span-2">
+        <button class="btn btn-primary" type="submit">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
+          </svg>
+            Cadastrar aluno
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+  <!-- Notificação -->
+<div id="notification" class="notification">
+  <div class="flex items-center gap-3">
+    <div id="notif-icon" class="w-8 h-8 rounded-full flex items-center justify-center">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+      </svg>
+    </div>
+    <div>
+      <div id="notif-title" class="font-semibold"></div>
+      <div id="notif-message" class="text-sm text-gray-600"></div>
+    </div>
+    <button id="notif-close" class="text-gray-400 hover:text-gray-600">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+      </svg>
+    </button>
+  </div>
+</div>
+<script>// ========== SISTEMA MELHORADO ==========
+    ;(function(){
+      // ---------- CONSTANTES ----------
+      const HOUR_RATE_DEFAULT = 25.0;
+      const WEEKS_PER_MONTH = 4.33;
+      // Storage Keys
+      const KEYS = {
+        PROF: 'profportal_prof_v2',
+        ALUNOS: 'profportal_alunos_v2',
+        NOTAS: 'profportal_notas_v2',
+        FREQ: 'profportal_freq_v2',
+        AGENDA: 'profportal_agenda_v2',
+        CONFIG: 'profportal_config_v2'
+      };
+      // ---------- UTILITÁRIOS ----------
+      const $ = sel => document.querySelector(sel);
+      const $$ = sel => document.querySelectorAll(sel);
+      const Utils = {
+        load: (key, fallback) => {
+          try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : fallback;
+          } catch {
+            return fallback;
+          }
+        },
+        save: (key, data) => {
+          try {
+            localStorage.setItem(key, JSON.stringify(data));
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        format: {
+          date: d => new Date(d).toLocaleDateString('pt-BR'),
+          currency: v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
+          time: d => d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}),
+          percentage: v => (v * 100).toFixed(1) + '%'
+        },
+        date: {
+          today: () => new Date().toISOString().slice(0,10),
+          addDays: (date, days) => {
+            const d = new Date(date);
+            d.setDate(d.getDate() + days);
+            return d;
+          },
+          isoDate: d => d.toISOString().slice(0,10),
+          weekdayName: i => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][i]
+        },
+        debounce: (func, wait) => {
+          let timeout;
+          return function executedFunction(...args) {
+            const later = () => {
+              clearTimeout(timeout);
+              func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+          };
+        }
+      };
+      // ---------- SISTEMA DE NOTIFICAÇÕES ----------
+      const Notifications = {
+        show: (title, message, type = 'success') => {
+          const notification = $('#notification');
+          const icon = $('#notif-icon');
+          const titleEl = $('#notif-title');
+          const messageEl = $('#notif-message');
+          const colors = {
+            success: 'bg-green-100 text-green-600',
+            warning: 'bg-yellow-100 text-yellow-600',
+            error: 'bg-red-100 text-red-600',
+            info: 'bg-blue-100 text-blue-600'
+          };
+          icon.className = `w-8 h-8 rounded-full flex items-center justify-center ${colors[type]}`;
+          titleEl.textContent = title;
+          messageEl.textContent = message;
+          notification.classList.add('show');
+          setTimeout(() => {
+            notification.classList.remove('show');
+          }, 4000);
+        }
+      };
+      // Fechar notificação
+      $('#notif-close')?.addEventListener('click', () => {
+        $('#notification').classList.remove('show');
+      });
+      // ---------- DADOS INICIAIS ----------
+      let prof = Utils.load(KEYS.PROF, null);
+      let config = Utils.load(KEYS.CONFIG, {
+        notifications: true,
+        autobackup: true,
+        compact: false,
+        hourRate: HOUR_RATE_DEFAULT
+      });
+      if (!prof) {
+        prof = { 
+          id: 1001, 
+          nome: 'Prof. Elise Silva', 
+          email: 'elise@escola.com', 
+          tel: '(11) 99999-9999', 
+          idiomas: 'Inglês, Francês, Espanhol',
+          valorHora: config.hourRate
+        };
+        Utils.save(KEYS.PROF, prof);
+      }
+      // Garantir dados iniciais dos alunos
+      if (Utils.load(KEYS.ALUNOS, []).length === 0) {
+        const hoje = new Date();
+        const proxSeg = Utils.date.addDays(hoje, (8 - hoje.getDay()) % 7 || 7);
+        const mockAlunos = [
+          {
+            id: Date.now() + 1,
+            nome: 'Maria Oliveira Santos',
+            turma: 'A2 Noite',
+            disciplina: 'Inglês',
+            status: 'Ativo',
+            professorId: prof.id,
+            nextDate: Utils.date.isoDate(proxSeg),
+            nextTime: '19:00',
+            prefSlots: ['2 19:00-20:00', '4 19:00-20:00'],
+            aulasSemana: 2,
+            duracaoMin: 60
+          },
+          {
+            id: Date.now() + 2,
+            nome: 'Pedro Santos Silva',
+            turma: 'B1 Manhã',
+            disciplina: 'Francês',
+            status: 'Ativo',
+            professorId: prof.id,
+            nextDate: Utils.date.isoDate(Utils.date.addDays(proxSeg, 1)),
+            nextTime: '08:30',
+            prefSlots: ['1 08:00-09:00', '3 08:00-09:00'],
+            aulasSemana: 1,
+            duracaoMin: 90
+          },
+          {
+            id: Date.now() + 3,
+            nome: 'Luana Lima Costa',
+            turma: 'Particular Avançado',
+            disciplina: 'Inglês',
+            status: 'Ativo',
+            professorId: prof.id,
+            nextDate: Utils.date.isoDate(Utils.date.addDays(proxSeg, 3)),
+            nextTime: '18:30',
+            prefSlots: ['3 18:00-20:00', '5 18:00-20:00'],
+            aulasSemana: 1,
+            duracaoMin: 60
+          }
+        ];
+        Utils.save(KEYS.ALUNOS, mockAlunos);
+      }
+      // Inicializar agenda se não existir
+      if (Utils.load(KEYS.AGENDA, null) === null) {
+        Utils.save(KEYS.AGENDA, {
+          googleConnected: false,
+          avail: [{ dow: 2, start: '19:00', end: '21:00' }],
+          events: []
+        });
+      }
+      // ---------- NAVEGAÇÃO MÓVEL ----------
+      const mobileMenuBtn = $('#mobile-menu-btn');
+      const sidebar = $('#sidebar');
+      const mainContent = $('#main-content');
+      mobileMenuBtn?.addEventListener('click', () => {
+        sidebar.classList.toggle('show-mobile');
+      });
+      // Fechar sidebar móvel ao clicar fora
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 1024) {
+          if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+            sidebar.classList.remove('show-mobile');
+          }
+        }
+      });
+      // ---------- NAVEGAÇÃO ----------
+      function hideAllSections() {
+        $$('.sec').forEach(section => section.classList.add('hidden'));
+      }
+      function showSection(sectionId) {
+        hideAllSections();
+        const section = $(`#${sectionId}`);
+        if (section) {
+          section.classList.remove('hidden');
+        }
+      }
+      function setActiveNav(targetSection) {
+        $$('.nav-item').forEach(item => item.classList.remove('active'));
+        const activeItem = $(`.nav-item[data-target="${targetSection}"]`);
+        if (activeItem) {
+          activeItem.classList.add('active');
+        }
+      }
+      $$('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const target = item.getAttribute('data-target');
+          showSection(target);
+          setActiveNav(target);
+          // Fechar sidebar móvel após navegação
+          if (window.innerWidth <= 1024) {
+            sidebar.classList.remove('show-mobile');
+          }
+          // Renderizar seção específica
+          switch(target) {
+            case 'dash':
+              renderDashboard();
+              break;
+            case 'alunos':
+              renderAlunos();
+              break;
+            case 'lancar':
+              renderLancar();
+              break;
+            case 'agenda':
+              renderAgenda();
+              break;
+            case 'relatorios':
+              renderRelatorios();
+              break;
+            case 'cfg':
+              renderConfig();
+              break;
+          }
+        });
+      });
+      // ---------- MODO ESCURO ----------
+      const darkToggle = $('#dark-toggle');
+      const isDarkMode = Utils.load('profportal_dark', false);
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('bg-gray-900', 'text-gray-100');
+        darkToggle.checked = true;
+      }
+      darkToggle?.addEventListener('change', () => {
+        if (darkToggle.checked) {
+          document.documentElement.classList.add('dark');
+          document.body.classList.add('bg-gray-900', 'text-gray-100');
+          Utils.save('profportal_dark', true);
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.body.classList.remove('bg-gray-900', 'text-gray-100');
+          Utils.save('profportal_dark', false);
+        }
+      });
+      // ---------- HEADER ----------
+      $('#prof-name').textContent = prof.nome;
+      $('#prof-mini').textContent = prof.email;
+      $('#logout')?.addEventListener('click', () => {
+        if (confirm('Deseja realmente sair do sistema?')) {
+          Notifications.show('Logout', 'Sessão encerrada com sucesso', 'info');
+          // Aqui seria o redirect para login
+        }
+      });
+      // ---------- DASHBOARD ----------
+      let notasChart, frequenciaChart, distribuicaoChart;
+      function renderDashboard() {
+        const alunos = Utils.load(KEYS.ALUNOS, []).filter(a => a.professorId === prof.id && a.status === 'Ativo');
+        const notas = Utils.load(KEYS.NOTAS, []);
+        const freq = Utils.load(KEYS.FREQ, []);
+        // KPIs
+        $('#kpiAlunos').textContent = alunos.length;
+        const weekEnd = Utils.date.addDays(new Date(), 7);
+        const agenda = Utils.load(KEYS.AGENDA, { events: [] });
+        const eventosSemana = agenda.events.filter(ev => {
+          const d = new Date(ev.start);
+          return d >= new Date() && d <= weekEnd;
+        }).length + alunos.filter(a => new Date(a.nextDate) <= weekEnd).length;
+        $('#kpiAulasSemana').textContent = eventosSemana;
+        // Pendências
+        const ult7 = Utils.date.addDays(new Date(), -7);
+        let pendN = 0, pendF = 0;
+        alunos.forEach(a => {
+          const aula = Utils.date.addDays(new Date(a.nextDate), -7);
+          if (aula >= ult7 && aula < new Date()) {
+            const temNota = notas.some(n => n.studentId === a.id && Utils.date.isoDate(new Date(n.date)) === Utils.date.isoDate(aula));
+            const temFreq = freq.some(f => f.studentId === a.id && Utils.date.isoDate(new Date(f.date)) === Utils.date.isoDate(aula));
+            if (!temNota) pendN++;
+            if (!temFreq) pendF++;
+          }
+        });
+        $('#kpiNotasPend').textContent = pendN;
+        $('#kpiFreqPend').textContent = pendF;
+        // Estimativa financeira
+        const resumoFinanceiro = calcularFinanceiro();
+        $('#kpiEstimativaMes').textContent = Utils.format.currency(resumoFinanceiro.total);
+        // Próximas aulas
+        renderProximasAulas(alunos, agenda.events);
+        // Charts
+        setTimeout(() => {
+          renderNotasChart();
+          renderFrequenciaChart();
+        }, 100);
+        // Resumo financeiro detalhado
+        renderFinanceiroDetalhado();
+      }
+      function calcularFinanceiro() {
+        const alunos = Utils.load(KEYS.ALUNOS, []).filter(a => a.professorId === prof.id && a.status === 'Ativo');
+        let total = 0;
+        const detalhado = alunos.map(a => {
+          const aulas = Math.max(0, Number(a.aulasSemana || 1));
+          const dur = Math.max(1, Number(a.duracaoMin || 60));
+          const horasSemana = aulas * (dur / 60);
+          const valorMes = horasSemana * WEEKS_PER_MONTH * (prof.valorHora || config.hourRate);
+          total += valorMes;
+          return {
+            id: a.id,
+            nome: a.nome,
+            aulas,
+            dur,
+            horasSemana: horasSemana.toFixed(2),
+            valorMes
+          };
+        });
+        return { total, detalhado };
+      }
+      function renderProximasAulas(alunos, eventos) {
+        const container = $('#proxAulas');
+        if (!container) return;
+        const proximas = [];
+        // Aulas dos alunos
+        alunos.forEach(a => {
+          if (a.nextDate) {
+            proximas.push({
+              data: new Date(a.nextDate),
+              titulo: `${a.nome} - ${a.disciplina}`,
+              horario: a.nextTime || '19:00',
+              tipo: 'aula'
+            });
+          }
+        });
+        // Eventos da agenda
+        eventos.forEach(e => {
+          const dataEvento = new Date(e.start);
+          if (dataEvento >= new Date()) {
+            proximas.push({
+              data: dataEvento,
+              titulo: e.title || 'Evento',
+              horario: Utils.format.time(dataEvento),
+              tipo: 'evento'
+            });
+          }
+        });
+        // Ordenar e mostrar próximas 5
+        proximas.sort((a, b) => a.data - b.data);
+        container.innerHTML = '';
+        if (proximas.length === 0) {
+          container.innerHTML = '<p class="text-gray-500 text-sm">Nenhuma aula agendada para os próximos dias</p>';
+          return;
+        }
+        proximas.slice(0, 5).forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg';
+          const tipoColor = item.tipo === 'aula' ? 'bg-blue-500' : 'bg-green-500';
+          div.innerHTML = `
+            <div class="w-3 h-3 ${tipoColor} rounded-full"></div>
+            <div class="flex-1">
+              <div class="font-medium text-sm">${item.titulo}</div>
+              <div class="text-xs text-gray-500">${Utils.format.date(item.data)} às ${item.horario}</div>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+      function renderFinanceiroDetalhado() {
+        const { detalhado, total } = calcularFinanceiro();
+        $('#finTotalMes').textContent = Utils.format.currency(total);
+        const tbody = $('#fin-tbl-alunos');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        detalhado.forEach(d => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="text-white/90">${d.nome}</td>
+            <td class="text-white/90">${d.aulas}</td>
+            <td class="text-white/90">${d.dur}min</td>
+            <td class="text-white/90">${d.horasSemana}h</td>
+            <td class="text-white/90 font-semibold">${Utils.format.currency(d.valorMes)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      // ---------- GRÁFICOS ----------
+      function renderNotasChart() {
+        const canvas = $('#notasChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (notasChart) {
+          notasChart.destroy();
+        }
+        const notas = Utils.load(KEYS.NOTAS, []);
+        const alunos = Utils.load(KEYS.ALUNOS, []);
+        // Dados dos últimos 30 dias
+        const ultimos30 = Utils.date.addDays(new Date(), -30);
+        const notasRecentes = notas.filter(n => new Date(n.date) >= ultimos30);
+        // Agrupar por data
+        const dadosPorData = {};
+        notasRecentes.forEach(n => {
+          const data = Utils.date.isoDate(new Date(n.date));
+          if (!dadosPorData[data]) {
+            dadosPorData[data] = [];
+          }
+          if (n.nota !== null && n.nota !== undefined) {
+            dadosPorData[data].push(n.nota);
+          }
+        });
+        // Calcular médias
+        const labels = [];
+        const mediaNotas = [];
+        Object.keys(dadosPorData).sort().forEach(data => {
+          const notas = dadosPorData[data];
+          if (notas.length > 0) {
+            labels.push(Utils.format.date(new Date(data)));
+            const media = notas.reduce((s, n) => s + n, 0) / notas.length;
+            mediaNotas.push(media.toFixed(1));
+          }
+        });
+        notasChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels.slice(-10), // Últimos 10 dias com dados
+            datasets: [{
+              label: 'Média das Notas',
+              data: mediaNotas.slice(-10),
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 10,
+                title: {
+                  display: true,
+                  text: 'Nota (0-10)'
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }
+        });
+      }
+      function renderFrequenciaChart() {
+        const canvas = $('#frequenciaChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (frequenciaChart) {
+          frequenciaChart.destroy();
+        }
+        const freq = Utils.load(KEYS.FREQ, []);
+        const alunos = Utils.load(KEYS.ALUNOS, []);
+        // Agrupar por turma
+        const freqPorTurma = {};
+        alunos.forEach(a => {
+          const turma = a.turma || 'Sem turma';
+          if (!freqPorTurma[turma]) {
+            freqPorTurma[turma] = { presentes: 0, total: 0 };
+          }
+          const freqAluno = freq.filter(f => f.studentId === a.id);
+          freqPorTurma[turma].total += freqAluno.length;
+          freqPorTurma[turma].presentes += freqAluno.filter(f => f.presente).length;
+        });
+        const labels = Object.keys(freqPorTurma);
+        const percentuais = labels.map(turma => {
+          const dados = freqPorTurma[turma];
+          return dados.total > 0 ? (dados.presentes / dados.total * 100).toFixed(1) : 0;
+        });
+        frequenciaChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Taxa de Presença (%)',
+              data: percentuais,
+              backgroundColor: [
+                '#3b82f6',
+                '#10b981',
+                '#f59e0b',
+                '#ef4444',
+                '#8b5cf6'
+              ].slice(0, labels.length),
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                  display: true,
+                  text: 'Percentual (%)'
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }
+        });
+      }
+      // ---------- ALUNOS ----------
+      function renderAlunos() {
+        const tbody = $('#tbl-alunos');
+        if (!tbody) return;
+        const filtro = $('#aluno-q')?.value?.toLowerCase() || '';
+        const alunos = Utils.load(KEYS.ALUNOS, [])
+          .filter(a => a.professorId === prof.id)
+          .filter(a => {
+            const texto = `${a.nome} ${a.turma} ${a.disciplina}`.toLowerCase();
+            return texto.includes(filtro);
+          });
+        const notas = Utils.load(KEYS.NOTAS, []);
+        tbody.innerHTML = '';
+        alunos.forEach(aluno => {
+          // Calcular média
+          const notasAluno = notas.filter(n => n.studentId === aluno.id && n.nota !== null);
+          const media = notasAluno.length > 0 ? 
+            (notasAluno.reduce((s, n) => s + n.nota, 0) / notasAluno.length).toFixed(1) : 
+            '-';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>
+              <div class="font-medium">${aluno.nome}</div>
+              <div class="text-xs text-gray-500">ID: ${aluno.id}</div>
+            </td>
+            <td>
+              <span class="pill">${aluno.turma || '-'}</span>
+            </td>
+            <td>${aluno.disciplina || '-'}</td>
+            <td>
+              <div class="text-sm">${Utils.format.date(aluno.nextDate)}</div>
+              <div class="text-xs text-gray-500">${aluno.nextTime || ''}</div>
+            </td>
+            <td>
+              <span class="pill ${aluno.status === 'Ativo' ? 'pill-success' : 'pill-warning'}">${aluno.status}</span>
+            </td>
+            <td class="font-semibold ${media !== '-' && parseFloat(media) < 6 ? 'text-red-600' : 'text-green-600'}">${media}</td>
+            <td class="space-x-2 whitespace-nowrap">
+              <button class="text-blue-600 hover:underline text-sm act-lancar" data-id="${aluno.id}">Lançar</button>
+              <button class="text-green-600 hover:underline text-sm act-hist" data-id="${aluno.id}">Histórico</button>
+              <button class="text-red-600 hover:underline text-sm act-remover" data-id="${aluno.id}">Remover</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+        // Event listeners para ações
+        tbody.addEventListener('click', (e) => {
+          const btn = e.target.closest('button');
+          if (!btn) return;
+          const alunoId = btn.getAttribute('data-id');
+          if (btn.classList.contains('act-lancar')) {
+            abrirModalLancamento(alunoId);
+          } else if (btn.classList.contains('act-hist')) {
+            abrirModalLancamento(alunoId);
+          } else if (btn.classList.contains('act-remover')) {
+            removerAluno(alunoId);
+          }
+        });
+      }
+      // Filtro de alunos com debounce
+      $('#aluno-q')?.addEventListener('input', Utils.debounce(() => {
+        renderAlunos();
+      }, 300));
+      // Adicionar novo aluno
+      $('#add-aluno')?.addEventListener('click', () => {
+        $('#modal-aluno').style.display = 'block';
+      });
+      $('#aluno-close')?.addEventListener('click', () => {
+        $('#modal-aluno').style.display = 'none';
+      });
+      $('#aluno-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const novoAluno = {
+          id: Date.now(),
+          nome: $('#aluno-nome').value.trim(),
+          turma: $('#aluno-turma').value.trim(),
+          disciplina: $('#aluno-disciplina').value.trim(),
+          status: $('#aluno-status').value,
+          professorId: prof.id,
+          nextDate: $('#aluno-data').value || Utils.date.today(),
+          nextTime: $('#aluno-horario').value || '19:00',
+          aulasSemana: parseInt($('#aluno-aulas').value) || 1,
+          duracaoMin: parseInt($('#aluno-duracao').value) || 60,
+          prefSlots: []
+        };
+        if (!novoAluno.nome) {
+          Notifications.show('Erro', 'Nome é obrigatório', 'error');
+          return;
+        }
+        const alunos = Utils.load(KEYS.ALUNOS, []);
+        alunos.push(novoAluno);
+        Utils.save(KEYS.ALUNOS, alunos);
+        $('#modal-aluno').style.display = 'none';
+        $('#aluno-form').reset();
+        renderAlunos();
+        Notifications.show('Sucesso', `Aluno ${novoAluno.nome} cadastrado!`, 'success');
+      });
+      function removerAluno(alunoId) {
+        const aluno = Utils.load(KEYS.ALUNOS, []).find(a => a.id == alunoId);
+        if (!aluno) return;
+        if (confirm(`Tem certeza que deseja remover o aluno ${aluno.nome}? Esta ação também removerá todas as notas e frequências relacionadas.`)) {
+          let alunos = Utils.load(KEYS.ALUNOS, []);
+          let notas = Utils.load(KEYS.NOTAS, []);
+          let freq = Utils.load(KEYS.FREQ, []);
+          alunos = alunos.filter(a => a.id != alunoId);
+          notas = notas.filter(n => n.studentId != alunoId);
+          freq = freq.filter(f => f.studentId != alunoId);
+          Utils.save(KEYS.ALUNOS, alunos);
+          Utils.save(KEYS.NOTAS, notas);
+          Utils.save(KEYS.FREQ, freq);
+          renderAlunos();
+          Notifications.show('Aluno removido', `${aluno.nome} foi removido do sistema`, 'info');
+        }
+      }
+      // ---------- LANÇAR NOTAS ----------
+      function renderLancar() {
+        // Preencher select de alunos
+        const selectAlunos = $('#lr-aluno');
+        if (selectAlunos) {
+          selectAlunos.innerHTML = '<option value="">Selecione um aluno</option>';
+          const alunos = Utils.load(KEYS.ALUNOS, []).filter(a => a.professorId === prof.id && a.status === 'Ativo');
+          alunos.forEach(aluno => {
+            const option = document.createElement('option');
+            option.value = aluno.id;
+            option.textContent = aluno.nome;
+            selectAlunos.appendChild(option);
+          });
+        }
+        // Data padrão
+        if ($('#lr-data')) {
+          $('#lr-data').value = Utils.date.today();
+        }
+        // Renderizar histórico
+        renderHistoricoLancamentos();
+      }
+      function renderHistoricoLancamentos() {
+        const tbody = $('#tbl-hist');
+        if (!tbody) return;
+        const notas = Utils.load(KEYS.NOTAS, [])
+          .filter(n => n.professorId === prof.id)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 20);
+        const alunos = Utils.load(KEYS.ALUNOS, []);
+        const freq = Utils.load(KEYS.FREQ, []);
+        tbody.innerHTML = '';
+        notas.forEach(nota => {
+          const aluno = alunos.find(a => a.id === nota.studentId);
+          const frequencia = freq.find(f => 
+            f.studentId === nota.studentId && 
+            Utils.date.isoDate(new Date(f.date)) === Utils.date.isoDate(new Date(nota.date))
+          );
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${Utils.format.date(nota.date)}</td>
+            <td>${aluno ? aluno.nome : 'Aluno removido'}</td>
+            <td>${nota.disciplina || '-'}</td>
+            <td class="font-semibold ${nota.nota < 6 ? 'text-red-600' : 'text-green-600'}">${nota.nota ?? '-'}</td>
+            <td>
+              ${frequencia ? 
+                `<span class="pill ${frequencia.presente ? 'pill-success' : 'pill-danger'}">${frequencia.presente ? 'Presente' : 'Falta'}</span>` 
+                : '-'}
+            </td>
+            <td class="text-sm text-gray-600 max-w-xs truncate">${nota.obs || '-'}</td>
+            <td>
+              <button class="text-red-600 hover:underline text-sm" onclick="removerLancamento(${nota.id})">Remover</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      // Form de lançamento rápido
+      $('#form-rapido')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const alunoId = parseInt($('#lr-aluno').value);
+        const data = $('#lr-data').value || Utils.date.today();
+        const disciplina = $('#lr-disc').value.trim();
+        const nota = $('#lr-nota').value ? parseFloat($('#lr-nota').value) : null;
+        const presente = $('#lr-presente').checked;
+        const obs = $('#lr-obs').value.trim();
+        if (!alunoId) {
+          Notifications.show('Erro', 'Selecione um aluno', 'error');
+          return;
+        }
+        if (nota !== null && (nota < 0 || nota > 10)) {
+          Notifications.show('Erro', 'Nota deve estar entre 0 e 10', 'error');
+          return;
+        }
+        // Salvar nota
+        const notas = Utils.load(KEYS.NOTAS, []);
+        notas.push({
+          id: Date.now(),
+          studentId: alunoId,
+          professorId: prof.id,
+          date: data,
+          disciplina,
+          nota,
+          obs
+        });
+        Utils.save(KEYS.NOTAS, notas);
+        // Salvar frequência
+        const freq = Utils.load(KEYS.FREQ, []);
+        const existingFreq = freq.find(f => 
+          f.studentId === alunoId && 
+          Utils.date.isoDate(new Date(f.date)) === Utils.date.isoDate(new Date(data))
+        );
+        if (existingFreq) {
+          existingFreq.presente = presente;
+        } else {
+          freq.push({
+            id: Date.now() + 1,
+            studentId: alunoId,
+            professorId: prof.id,
+            date: data,
+            presente
+          });
+        }
+        Utils.save(KEYS.FREQ, freq);
+        // Reset form
+        e.target.reset();
+        $('#lr-data').value = Utils.date.today();
+        renderHistoricoLancamentos();
+        Notifications.show('Sucesso', 'Lançamento realizado com sucesso!', 'success');
+      });
+      // ---------- MODAL DE LANÇAMENTO ----------
+      function abrirModalLancamento(alunoId) {
+        const aluno = Utils.load(KEYS.ALUNOS, []).find(a => a.id == alunoId);
+        if (!aluno) return;
+        $('#ml-aluno').textContent = aluno.nome;
+        $('#ml-id-aluno').value = aluno.id;
+        $('#ml-data').value = Utils.date.today();
+        $('#ml-disc').value = aluno.disciplina || '';
+        $('#ml-nota').value = '';
+        $('#ml-presente').checked = true;
+        $('#ml-obs').value = '';
+        // Histórico do aluno
+        const notas = Utils.load(KEYS.NOTAS, [])
+          .filter(n => n.studentId == aluno.id)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 10);
+        const freq = Utils.load(KEYS.FREQ, []);
+        const tbody = $('#ml-hist');
+        tbody.innerHTML = '';
+        notas.forEach(nota => {
+          const frequencia = freq.find(f => 
+            f.studentId == aluno.id && 
+            Utils.date.isoDate(new Date(f.date)) === Utils.date.isoDate(new Date(nota.date))
+          );
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${Utils.format.date(nota.date)}</td>
+            <td>${nota.disciplina || '-'}</td>
+            <td class="font-semibold ${nota.nota < 6 ? 'text-red-600' : 'text-green-600'}">${nota.nota ?? '-'}</td>
+            <td>
+              ${frequencia ? 
+                `<span class="pill ${frequencia.presente ? 'pill-success' : 'pill-danger'}">${frequencia.presente ? 'Presente' : 'Falta'}</span>` 
+                : '-'}
+            </td>
+            <td class="text-sm text-gray-600 max-w-xs">${nota.obs || '-'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        $('#modal-lancar').style.display = 'block';
+      }
+      $('#ml-close')?.addEventListener('click', () => {
+        $('#modal-lancar').style.display = 'none';
+      });
+      $('#ml-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const alunoId = parseInt($('#ml-id-aluno').value);
+        const data = $('#ml-data').value || Utils.date.today();
+        const disciplina = $('#ml-disc').value.trim();
+        const nota = $('#ml-nota').value ? parseFloat($('#ml-nota').value) : null;
+        const presente = $('#ml-presente').checked;
+        const obs = $('#ml-obs').value.trim();
+        if (nota !== null && (nota < 0 || nota > 10)) {
+          Notifications.show('Erro', 'Nota deve estar entre 0 e 10', 'error');
+          return;
+        }
+        // Salvar nota
+        const notas = Utils.load(KEYS.NOTAS, []);
+        notas.push({
+          id: Date.now(),
+          studentId: alunoId,
+          professorId: prof.id,
+          date: data,
+          disciplina,
+          nota,
+          obs
+        });
+        Utils.save(KEYS.NOTAS, notas);
+        // Salvar frequência
+        const freq = Utils.load(KEYS.FREQ, []);
+        const existingFreq = freq.find(f => 
+          f.studentId === alunoId && 
+          Utils.date.isoDate(new Date(f.date)) === Utils.date.isoDate(new Date(data))
+        );
+        if (existingFreq) {
+          existingFreq.presente = presente;
+        } else {
+          freq.push({
+            id: Date.now() + 1,
+            studentId: alunoId,
+            professorId: prof.id,
+            date: data,
+            presente
+          });
+        }
+        Utils.save(KEYS.FREQ, freq);
+        $('#modal-lancar').style.display = 'none';
+        renderHistoricoLancamentos();
+        Notifications.show('Sucesso', 'Lançamento salvo!', 'success');
+      });
+      // ---------- AGENDA ----------
+      function renderAgenda() {
+        renderDisponibilidades();
+        renderEventos();
+        renderSemanaCalendario();
+        renderStatusGoogle();
+      }
+      function renderDisponibilidades() {
+        const agenda = Utils.load(KEYS.AGENDA, { avail: [] });
+        const container = $('#disp-list');
+        if (!container) return;
+        container.innerHTML = '';
+        agenda.avail.forEach((disp, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between p-2 bg-blue-50 rounded-lg';
+          div.innerHTML = `
+            <span class="pill">${Utils.date.weekdayName(disp.dow)} ${disp.start}–${disp.end}</span>
+            <button class="text-red-600 hover:underline text-sm" onclick="removerDisponibilidade(${index})">remover</button>
+          `;
+          container.appendChild(div);
+        });
+      }
+      function renderEventos() {
+        const agenda = Utils.load(KEYS.AGENDA, { events: [] });
+        const container = $('#evt-list');
+        if (!container) return;
+        container.innerHTML = '';
+        agenda.events
+          .sort((a, b) => new Date(a.start) - new Date(b.start))
+          .forEach((evento, index) => {
+            const start = new Date(evento.start);
+            const end = new Date(evento.end);
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-2 bg-green-50 rounded-lg';
+            div.innerHTML = `
+              <div>
+                <span class="pill pill-success">${Utils.format.date(start)} ${Utils.format.time(start)}–${Utils.format.time(end)}</span>
+                <div class="text-sm text-gray-600 mt-1">${evento.title || 'Evento sem título'}</div>
+              </div>
+              <button class="text-red-600 hover:underline text-sm" onclick="removerEvento(${index})">remover</button>
+            `;
+            container.appendChild(div);
+          });
+      }
+      function renderSemanaCalendario() {
+        const container = $('#semana');
+        if (!container) return;
+        const agenda = Utils.load(KEYS.AGENDA, { events: [] });
+        const alunos = Utils.load(KEYS.ALUNOS, []).filter(a => a.professorId === prof.id);
+        container.innerHTML = '';
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        for (let i = 0; i < 7; i++) {
+          const dia = Utils.date.addDays(hoje, i);
+          const col = document.createElement('div');
+          col.className = 'border rounded-lg p-3 min-h-32';
+          const isToday = Utils.date.isoDate(dia) === Utils.date.isoDate(new Date());
+          if (isToday) {
+            col.classList.add('bg-blue-50', 'border-blue-200');
+          }
+          const header = document.createElement('div');
+          header.className = `font-semibold mb-2 ${isToday ? 'text-blue-700' : ''}`;
+          header.innerHTML = `
+            ${Utils.date.weekdayName(dia.getDay())}
+            <div class="text-xs font-normal text-gray-500">${Utils.format.date(dia)}</div>
+          `;
+          col.appendChild(header);
+          // Eventos do dia
+          const eventosDoDia = agenda.events.filter(evento => {
+            const dataEvento = new Date(evento.start);
+            return Utils.date.isoDate(dataEvento) === Utils.date.isoDate(dia);
+          });
+          // Aulas dos alunos
+          const aulasDoDia = alunos.filter(aluno => {
+            return aluno.nextDate && Utils.date.isoDate(new Date(aluno.nextDate)) === Utils.date.isoDate(dia);
+          });
+          if (eventosDoDia.length === 0 && aulasDoDia.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'text-xs text-gray-400 italic';
+            empty.textContent = '— livre —';
+            col.appendChild(empty);
+          } else {
+            eventosDoDia.forEach(evento => {
+              const item = document.createElement('div');
+              item.className = 'mb-2';
+              item.innerHTML = `
+                <div class="pill pill-success text-xs">${Utils.format.time(new Date(evento.start))}</div>
+                <div class="text-xs mt-1">${evento.title}</div>
+              `;
+              col.appendChild(item);
+            });
+            aulasDoDia.forEach(aluno => {
+              const item = document.createElement('div');
+              item.className = 'mb-2';
+              item.innerHTML = `
+                <div class="pill text-xs">${aluno.nextTime || '19:00'}</div>
+                <div class="text-xs mt-1">${aluno.nome}</div>
+              `;
+              col.appendChild(item);
+            });
+          }
+          container.appendChild(col);
+        }
+      }
+      function renderStatusGoogle() {
+        const agenda = Utils.load(KEYS.AGENDA, { googleConnected: false });
+        $('#gg-status').textContent = `Google Agenda: ${agenda.googleConnected ? 'conectado' : 'desconectado'}`;
+      }
+      // Event listeners da agenda
+      $('#form-disp')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const dow = parseInt($('#disp-dow').value);
+        const start = $('#disp-ini').value;
+        const end = $('#disp-fim').value;
+        if (start >= end) {
+          Notifications.show('Erro', 'Horário de início deve ser menor que o fim', 'error');
+          return;
+        }
+        const agenda = Utils.load(KEYS.AGENDA, { avail: [] });
+        agenda.avail.push({ dow, start, end });
+        Utils.save(KEYS.AGENDA, agenda);
+        renderDisponibilidades();
+        Notifications.show('Sucesso', 'Disponibilidade adicionada!', 'success');
+      });
+      $('#form-evt')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = $('#evt-data').value;
+        const inicio = $('#evt-ini').value;
+        const fim = $('#evt-fim').value;
+        const titulo = $('#evt-titulo').value.trim();
+        if (!data || !inicio || !fim) {
+          Notifications.show('Erro', 'Preencha data e horários', 'error');
+          return;
+        }
+        if (inicio >= fim) {
+          Notifications.show('Erro', 'Horário de início deve ser menor que o fim', 'error');
+          return;
+        }
+        const start = new Date(`${data}T${inicio}:00`);
+        const end = new Date(`${data}T${fim}:00`);
+        const agenda = Utils.load(KEYS.AGENDA, { events: [] });
+        agenda.events.push({
+          id: Date.now(),
+          title: titulo || 'Evento',
+          start,
+          end
+        });
+        Utils.save(KEYS.AGENDA, agenda);
+        $('#form-evt').reset();
+        renderEventos();
+        renderSemanaCalendario();
+        Notifications.show('Sucesso', 'Evento adicionado!', 'success');
+      });
+      // Funções globais para agenda (chamadas pelos botões)
+      window.removerDisponibilidade = (index) => {
+        const agenda = Utils.load(KEYS.AGENDA, { avail: [] });
+        agenda.avail.splice(index, 1);
+        Utils.save(KEYS.AGENDA, agenda);
+        renderDisponibilidades();
+        Notifications.show('Info', 'Disponibilidade removida', 'info');
+      };
+      window.removerEvento = (index) => {
+        const agenda = Utils.load(KEYS.AGENDA, { events: [] });
+        agenda.events.splice(index, 1);
+        Utils.save(KEYS.AGENDA, agenda);
+        renderEventos();
+        renderSemanaCalendario();
+        Notifications.show('Info', 'Evento removido', 'info');
+      };
+      // ---------- RELATÓRIOS ----------
+      function renderRelatorios() {
+        renderEstatisticasGerais();
+        setTimeout(() => {
+          renderGraficoDistribuicao();
+        }, 100);
+      }
+      function renderEstatisticasGerais() {
+        const notas = Utils.load(KEYS.NOTAS, []);
+        const freq = Utils.load(KEYS.FREQ, []);
+        const alunos = Utils.load(KEYS.ALUNOS, []).filter(a => a.professorId === prof.id);
+        // Média geral
+        const notasValidas = notas.filter(n => n.nota !== null && n.nota !== undefined);
+        const mediaGeral = notasValidas.length > 0 ? 
+          (notasValidas.reduce((s, n) => s + n.nota, 0) / notasValidas.length).toFixed(1) : 
+          'N/A';
+        // Taxa de presença
+        const totalFreq = freq.length;
+        const presentes = freq.filter(f => f.presente).length;
+        const taxaPresenca = totalFreq > 0 ? 
+          Utils.format.percentage(presentes / totalFreq) : 
+          'N/A';
+        // Aulas do mês
+        const inicioMes = new Date();
+        inicioMes.setDate(1);
+        inicioMes.setHours(0, 0, 0, 0);
+        const aulasDoMes = notas.filter(n => new Date(n.date) >= inicioMes).length;
+        // Alunos com nota baixa
+        const alunosNotaBaixa = alunos.filter(aluno => {
+          const notasAluno = notasValidas.filter(n => n.studentId === aluno.id);
+          if (notasAluno.length === 0) return false;
+          const mediaAluno = notasAluno.reduce((s, n) => s + n.nota, 0) / notasAluno.length;
+          return mediaAluno < 6.0;
+        }).length;
+        // Atualizar elementos
+        $('#stat-media').textContent = mediaGeral;
+        $('#stat-presenca').textContent = taxaPresenca;
+        $('#stat-aulas').textContent = aulasDoMes;
+        $('#stat-baixo').textContent = alunosNotaBaixa;
+      }
+      function renderGraficoDistribuicao() {
+        const canvas = $('#distribuicaoChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (distribuicaoChart) {
+          distribuicaoChart.destroy();
+        }
+        const notas = Utils.load(KEYS.NOTAS, []).filter(n => n.nota !== null);
+        // Distribuição por faixas
+        const faixas = {
+          '0-2': 0,
+          '2-4': 0,
+          '4-6': 0,
+          '6-8': 0,
+          '8-10': 0
+        };
+        notas.forEach(n => {
+          const nota = n.nota;
+          if (nota >= 0 && nota < 2) faixas['0-2']++;
+          else if (nota >= 2 && nota < 4) faixas['2-4']++;
+          else if (nota >= 4 && nota < 6) faixas['4-6']++;
+          else if (nota >= 6 && nota < 8) faixas['6-8']++;
+          else if (nota >= 8 && nota <= 10) faixas['8-10']++;
+        });
+        distribuicaoChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(faixas),
+            datasets: [{
+              data: Object.values(faixas),
+              backgroundColor: [
+                '#ef4444',  // 0-2
+                '#f97316',  // 2-4
+                '#eab308',  // 4-6
+                '#22c55e',  // 6-8
+                '#3b82f6'   // 8-10
+              ],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom'
+              }
+            }
+          }
+        });
+      }
+      // Botões de relatórios
+      $('#rel-mensal')?.addEventListener('click', () => {
+        gerarRelatorioMensal();
+      });
+      $('#rel-aluno')?.addEventListener('click', () => {
+        selecionarAlunoRelatorio();
+      });
+      $('#rel-financeiro')?.addEventListener('click', () => {
+        visualizarRelatorioFinanceiro();
+      });
+      function gerarRelatorioMensal() {
+        const hoje = new Date();
+        const mes = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        const notas = Utils.load(KEYS.NOTAS, []);
+        const freq = Utils.load(KEYS.FREQ, []);
+        const alunos = Utils.load(KEYS.ALUNOS, []).filter(a => a.professorId === prof.id);
+        let relatorio = `RELATÓRIO MENSAL - ${mes.toUpperCase()}\n`;
+        relatorio += `Professor: ${prof.nome}\n`;
+        relatorio += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n`;
+        relatorio += `RESUMO:\n`;
+        relatorio += `- Total de alunos ativos: ${alunos.filter(a => a.status === 'Ativo').length}\n`;
+        relatorio += `- Total de aulas realizadas: ${notas.length}\n`;
+        relatorio += `- Estimativa de faturamento: ${Utils.format.currency(calcularFinanceiro().total)}\n\n`;
+        relatorio += `DETALHAMENTO POR ALUNO:\n`;
+        alunos.forEach(aluno => {
+          const notasAluno = notas.filter(n => n.studentId === aluno.id);
+          const freqAluno = freq.filter(f => f.studentId === aluno.id);
+          const presencas = freqAluno.filter(f => f.presente).length;
+          const mediaAluno = notasAluno.length > 0 ? 
+            (notasAluno.reduce((s, n) => s + (n.nota || 0), 0) / notasAluno.length).toFixed(1) : 
+            'N/A';
+          relatorio += `\n${aluno.nome}:\n`;
+          relatorio += `  - Aulas: ${notasAluno.length}\n`;
+          relatorio += `  - Presenças: ${presencas}/${freqAluno.length}\n`;
+          relatorio += `  - Média: ${mediaAluno}\n`;
+        });
+        // Download como arquivo de texto
+        const blob = new Blob([relatorio], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `relatorio-mensal-${hoje.getFullYear()}-${(hoje.getMonth() + 1).toString().padStart(2, '0')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        Notifications.show('Relatório gerado', 'Download iniciado!', 'success');
+      }
+      function selecionarAlunoRelatorio() {
+        const alunos = Utils.load(KEYS.ALUNOS, []).filter(a => a.professorId === prof.id);
+        if (alunos.length === 0) {
+          Notifications.show('Aviso', 'Nenhum aluno cadastrado', 'warning');
+          return;
+        }
+        const nomeAluno = prompt('Digite o nome do aluno (ou parte dele):');
+        if (!nomeAluno) return;
+        const alunoEncontrado = alunos.find(a => 
+          a.nome.toLowerCase().includes(nomeAluno.toLowerCase())
+        );
+        if (!alunoEncontrado) {
+          Notifications.show('Erro', 'Aluno não encontrado', 'error');
+          return;
+        }
+        gerarRelatorioAluno(alunoEncontrado);
+      }
+      function gerarRelatorioAluno(aluno) {
+        const notas = Utils.load(KEYS.NOTAS, []).filter(n => n.studentId === aluno.id);
+        const freq = Utils.load(KEYS.FREQ, []).filter(f => f.studentId === aluno.id);
+        let relatorio = `RELATÓRIO INDIVIDUAL - ${aluno.nome.toUpperCase()}\n`;
+        relatorio += `Professor: ${prof.nome}\n`;
+        relatorio += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n`;
+        relatorio += `DADOS DO ALUNO:\n`;
+        relatorio += `- Nome: ${aluno.nome}\n`;
+        relatorio += `- Turma: ${aluno.turma || 'N/A'}\n`;
+        relatorio += `- Disciplina: ${aluno.disciplina || 'N/A'}\n`;
+        relatorio += `- Status: ${aluno.status}\n\n`;
+        const mediaAluno = notas.filter(n => n.nota !== null).length > 0 ? 
+          (notas.filter(n => n.nota !== null).reduce((s, n) => s + n.nota, 0) / notas.filter(n => n.nota !== null).length).toFixed(1) : 
+          'N/A';
+        const presencas = freq.filter(f => f.presente).length;
+        const taxaPresenca = freq.length > 0 ? 
+          Utils.format.percentage(presencas / freq.length) : 
+          'N/A';
+        relatorio += `PERFORMANCE:\n`;
+        relatorio += `- Média de notas: ${mediaAluno}\n`;
+        relatorio += `- Taxa de presença: ${taxaPresenca}\n`;
+        relatorio += `- Total de aulas: ${notas.length}\n\n`;
+        relatorio += `HISTÓRICO (últimas 10 aulas):\n`;
+        notas.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10).forEach(nota => {
+          const frequencia = freq.find(f => 
+            Utils.date.isoDate(new Date(f.date)) === Utils.date.isoDate(new Date(nota.date))
+          );
+          relatorio += `\n${Utils.format.date(nota.date)}:\n`;
+          relatorio += `  - Nota: ${nota.nota ?? 'N/A'}\n`;
+          relatorio += `  - Presença: ${frequencia ? (frequencia.presente ? 'Sim' : 'Não') : 'N/A'}\n`;
+          if (nota.obs) {
+            relatorio += `  - Obs: ${nota.obs}\n`;
+          }
+        });
+        // Download
+        const blob = new Blob([relatorio], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `relatorio-${aluno.nome.replace(/\s+/g, '-').toLowerCase()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        Notifications.show('Relatório gerado', `Relatório de ${aluno.nome} baixado!`, 'success');
+      }
+      function visualizarRelatorioFinanceiro() {
+        const financeiro = calcularFinanceiro();
+        alert(`RESUMO FINANCEIRO ATUAL:\n\nEstimativa mensal: ${Utils.format.currency(financeiro.total)}\n\nDetalhamento:\n${financeiro.detalhado.map(d => `${d.nome}: ${Utils.format.currency(d.valorMes)} (${d.aulas} aulas/sem, ${d.dur}min cada)`).join('\n')}\n\nBase de cálculo: R$ ${prof.valorHora || config.hourRate}/hora`);
+      }
+      // ---------- CONFIGURAÇÕES ----------
+      function renderConfig() {
+        $('#cfg-nome').value = prof.nome || '';
+        $('#cfg-email').value = prof.email || '';
+        $('#cfg-tel').value = prof.tel || '';
+        $('#cfg-idiomas').value = prof.idiomas || '';
+        $('#cfg-valor').value = prof.valorHora || config.hourRate;
+        $('#cfg-notifications').checked = config.notifications;
+        $('#cfg-autobackup').checked = config.autobackup;
+        $('#cfg-compact').checked = config.compact;
+      }
+      $('#cfg-save')?.addEventListener('click', () => {
+        prof.nome = $('#cfg-nome').value.trim();
+        prof.email = $('#cfg-email').value.trim();
+        prof.tel = $('#cfg-tel').value.trim();
+        prof.idiomas = $('#cfg-idiomas').value.trim();
+        prof.valorHora = parseFloat($('#cfg-valor').value) || config.hourRate;
+        config.notifications = $('#cfg-notifications').checked;
+        config.autobackup = $('#cfg-autobackup').checked;
+        config.compact = $('#cfg-compact').checked;
+        config.hourRate = prof.valorHora;
+        Utils.save(KEYS.PROF, prof);
+        Utils.save(KEYS.CONFIG, config);
+        // Atualizar header
+        $('#prof-name').textContent = prof.nome;
+        $('#prof-mini').textContent = prof.email;
+        Notifications.show('Configurações salvas', 'Todas as alterações foram aplicadas!', 'success');
+      });
+      // Export/Import de dados
+      $('#export-backup')?.addEventListener('click', () => {
+        const backup = {
+          prof: Utils.load(KEYS.PROF, {}),
+          alunos: Utils.load(KEYS.ALUNOS, []),
+          notas: Utils.load(KEYS.NOTAS, []),
+          freq: Utils.load(KEYS.FREQ, []),
+          agenda: Utils.load(KEYS.AGENDA, {}),
+          config: Utils.load(KEYS.CONFIG, {}),
+          timestamp: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup-portal-professor-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        Notifications.show('Backup exportado', 'Arquivo de backup baixado com sucesso!', 'success');
+      });
+      $('#import-backup')?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const backup = JSON.parse(text);
+          if (confirm('ATENÇÃO: Esta ação substituirá todos os dados atuais. Continuar?')) {
+            if (backup.prof) Utils.save(KEYS.PROF, backup.prof);
+            if (backup.alunos) Utils.save(KEYS.ALUNOS, backup.alunos);
+            if (backup.notas) Utils.save(KEYS.NOTAS, backup.notas);
+            if (backup.freq) Utils.save(KEYS.FREQ, backup.freq);
+            if (backup.agenda) Utils.save(KEYS.AGENDA, backup.agenda);
+            if (backup.config) Utils.save(KEYS.CONFIG, backup.config);
+            // Reload da página para aplicar mudanças
+            location.reload();
+          }
+        } catch (error) {
+          Notifications.show('Erro', 'Arquivo de backup inválido', 'error');
+        }
+        e.target.value = '';
+      });
+      $('#reset-data')?.addEventListener('click', () => {
+        if (confirm('ATENÇÃO: Esta ação apagará todos os dados permanentemente. Digite "CONFIRMAR" para continuar:')) {
+          const confirmacao = prompt('Digite "CONFIRMAR" para apagar todos os dados:');
+          if (confirmacao === 'CONFIRMAR') {
+            Object.values(KEYS).forEach(key => {
+              localStorage.removeItem(key);
+            });
+            localStorage.removeItem('profportal_dark');
+            Notifications.show('Dados limpos', 'Todos os dados foram removidos. Recarregando...', 'warning');
+            setTimeout(() => location.reload(), 2000);
+          }
+        }
+      });
+      // ---------- MODAL FINANCEIRO ----------
+      $('#fin-edit')?.addEventListener('click', () => {
+        const alunos = Utils.load(KEYS.ALUNOS, []).filter(a => a.professorId === prof.id && a.status === 'Ativo');
+        const tbody = $('#fin-edit-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        alunos.forEach(aluno => {
+          const tr = document.createElement('tr');
+          const aulas = aluno.aulasSemana || 1;
+          const duracao = aluno.duracaoMin || 60;
+          const horasSemana = (aulas * duracao / 60).toFixed(2);
+          const estimativaMes = (horasSemana * WEEKS_PER_MONTH * (prof.valorHora || config.hourRate));
+          tr.innerHTML = `
+            <td class="font-medium">${aluno.nome}</td>
+            <td><input type="number" min="0" step="1" data-id="${aluno.id}" class="fin-aulas form-input w-20" value="${aulas}"/></td>
+            <td><input type="number" min="15" step="15" data-id="${aluno.id}" class="fin-dur form-input w-24" value="${duracao}"/></td>
+            <td class="font-semibold horas-semana">${horasSemana}h</td>
+            <td class="font-semibold text-green-600 estimativa-mes">${Utils.format.currency(estimativaMes)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        // Event listeners para recalcular em tempo real
+        $$('.fin-aulas, .fin-dur').forEach(input => {
+          input.addEventListener('input', () => {
+            const row = input.closest('tr');
+            const aulasInput = row.querySelector('.fin-aulas');
+            const duracaoInput = row.querySelector('.fin-dur');
+            const horasSpan = row.querySelector('.horas-semana');
+            const estimativaSpan = row.querySelector('.estimativa-mes');
+            const aulas = parseInt(aulasInput.value) || 0;
+            const duracao = parseInt(duracaoInput.value) || 60;
+            const horas = (aulas * duracao / 60);
+            const estimativa = (horas * WEEKS_PER_MONTH * (prof.valorHora || config.hourRate));
+            horasSpan.textContent = horas.toFixed(2) + 'h';
+            estimativaSpan.textContent = Utils.format.currency(estimativa);
+          });
+        });
+        $('#modal-fin').style.display = 'block';
+      });
+      $('#fin-close, #fin-cancel')?.forEach(btn => {
+        btn?.addEventListener('click', () => {
+          $('#modal-fin').style.display = 'none';
+        });
+      });
+      $('#fin-save')?.addEventListener('click', () => {
+        const alunos = Utils.load(KEYS.ALUNOS, []);
+        $$('.fin-aulas').forEach(input => {
+          const id = parseInt(input.getAttribute('data-id'));
+          const aluno = alunos.find(a => a.id === id);
+          if (aluno) {
+            aluno.aulasSemana = Math.max(0, parseInt(input.value) || 0);
+          }
+        });
+        $$('.fin-dur').forEach(input => {
+          const id = parseInt(input.getAttribute('data-id'));
+          const aluno = alunos.find(a => a.id === id);
+          if (aluno) {
+            aluno.duracaoMin = Math.max(15, parseInt(input.value) || 60);
+          }
+        });
+        Utils.save(KEYS.ALUNOS, alunos);
+        $('#modal-fin').style.display = 'none';
+        renderDashboard();
+        Notifications.show('Sucesso', 'Configurações de carga semanal salvas!', 'success');
+      });
+      // ---------- FUNÇÕES UTILITÁRIAS GLOBAIS ----------
+      window.removerLancamento = (notaId) => {
+        if (confirm('Tem certeza que deseja remover este lançamento?')) {
+          let notas = Utils.load(KEYS.NOTAS, []);
+          const nota = notas.find(n => n.id === notaId);
+          notas = notas.filter(n => n.id !== notaId);
+          Utils.save(KEYS.NOTAS, notas);
+          // Também remover frequência do mesmo dia se existir
+          let freq = Utils.load(KEYS.FREQ, []);
+          freq = freq.filter(f => !(
+            f.studentId === nota.studentId && 
+            Utils.date.isoDate(new Date(f.date)) === Utils.date.isoDate(new Date(nota.date))
+          ));
+          Utils.save(KEYS.FREQ, freq);
+          renderHistoricoLancamentos();
+          Notifications.show('Lançamento removido', 'Registro foi excluído', 'info');
+        }
+      };
+      // ---------- AUTO-BACKUP ----------
+      function autoBackup() {
+        if (!config.autobackup) return;
+        const lastBackup = Utils.load('profportal_last_backup', 0);
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+        if (now - lastBackup > oneDay) {
+          const backup = {
+            prof: Utils.load(KEYS.PROF, {}),
+            alunos: Utils.load(KEYS.ALUNOS, []),
+            notas: Utils.load(KEYS.NOTAS, []),
+            freq: Utils.load(KEYS.FREQ, []),
+            agenda: Utils.load(KEYS.AGENDA, {}),
+            config: Utils.load(KEYS.CONFIG, {}),
+            timestamp: new Date().toISOString()
+          };
+          Utils.save('profportal_auto_backup', backup);
+          Utils.save('profportal_last_backup', now);
+          if (config.notifications) {
+            Notifications.show('Backup automático', 'Dados salvos automaticamente', 'info');
+          }
+        }
+      }
+      // ---------- BOTÕES RÁPIDOS ----------
+      $('#refresh-data')?.addEventListener('click', () => {
+        renderDashboard();
+        Notifications.show('Atualizado', 'Dados atualizados com sucesso!', 'success');
+      });
+      $('#export-data')?.addEventListener('click', () => {
+        $('#export-backup')?.click();
+      });
+      // ---------- INICIALIZAÇÃO ----------
+      function inicializar() {
+        renderDashboard();
+        // Auto-backup diário
+        autoBackup();
+        setInterval(autoBackup, 60 * 60 * 1000); // Check every hour
+        // Show welcome notification
+        setTimeout(() => {
+          if (config.notifications) {
+            Notifications.show('Portal do Professor', `Bem-vindo, ${prof.nome}!`, 'success');
+          }
+        }, 1000);
+        console.log('Portal do Professor v2.0 inicializado com sucesso!');
+      }
+      // Start the application
+      inicializar();
+    })();</script>
+</body>
+</html>
